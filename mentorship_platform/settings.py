@@ -28,7 +28,7 @@ SECRET_KEY = 'django-insecure-9ogyg3_z9b5yzp%0dpf+zasim4ei7!n#h_t*pw*l!4l$g_6a19
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['mentor.vendlyghana.space', 'localhost', '127.0.0.1']
 
 
 # Application definition
@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'corsheaders',
     'accounts.apps.AccountsConfig',
     'todo.apps.TodoConfig',
     'reports.apps.ReportsConfig',
@@ -54,6 +55,7 @@ ADMIN_INDEX_TITLE = "Welcome to MentorFlow Admin Portal"
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -61,6 +63,18 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+# CORS Configuration
+CORS_ALLOWED_ORIGINS = [
+    "https://mentor.vendlyghana.space",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+]
+
+CORS_ALLOW_CREDENTIALS = True
+
+# Allow CORS for login and logout views specifically
+CORS_URLS_REGEX = r'^/accounts/(login|logout)/.*$'
 
 ROOT_URLCONF = 'mentorship_platform.urls'
 
