@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block title %}Send Message{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'notifications:inbox' %}">Messages</a></li>
+                <li class="breadcrumb-item active">Send Message</li>
+            </ol>
+        </nav>
+
+        <div class="card">
+            <div class="card-header">
+                <h2>Send Message to {{ recipient.get_full_name|default:recipient.username }}</h2>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label for="subject" class="form-label">Subject</label>
+                        <input type="text" name="subject" id="subject" class="form-control" required placeholder="Enter subject...">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="content" class="form-label">Message</label>
+                        <textarea name="content" id="content" class="form-control" rows="6" required placeholder="Type your message..."></textarea>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">Send Message</button>
+                        <a href="{% url 'notifications:inbox' %}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

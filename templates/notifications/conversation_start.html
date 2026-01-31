@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block title %}New Message{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'notifications:inbox' %}">Messages</a></li>
+                <li class="breadcrumb-item active">New Message</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-header">
+                <h5>Start Conversation with {{ other_user.get_full_name|default:other_user.username }}</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="mb-3 text-center">
+                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto mb-3"
+                             style="width: 80px; height: 80px; font-size: 2rem;">
+                            {{ other_user.username|first|upper }}
+                        </div>
+                        <h6>{{ other_user.get_full_name|default:other_user.username }}</h6>
+                        <p class="text-muted">{{ other_user.email }}</p>
+                        {% if other_user.profile.role == 'mentor' %}
+                            <span class="badge bg-info">Mentor</span>
+                        {% else %}
+                            <span class="badge bg-success">Mentee</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="content" class="form-label">Your Message</label>
+                        <textarea name="content"
+                                  id="content"
+                                  class="form-control"
+                                  rows="4"
+                                  placeholder="Type your first message here..."
+                                  required></textarea>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">Start Conversation</button>
+                        <a href="{% url 'notifications:inbox' %}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

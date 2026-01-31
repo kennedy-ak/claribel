@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ organization.name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'accounts:profile' %}">Profile</a></li>
+                <li class="breadcrumb-item active">{{ organization.name }}</li>
+            </ol>
+        </nav>
+
+        <div class="card">
+            <div class="card-header">
+                <h2>{{ organization.name }}</h2>
+                {% if is_admin or is_mentor %}
+                    <small class="text-muted">Join Code: <strong style="font-size: 1.2rem; letter-spacing: 2px;">{{ organization.join_code }}</strong></small>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                {% if organization.description %}
+                    <p>{{ organization.description }}</p>
+                {% endif %}
+
+                <p class="mb-0">
+                    <strong>Created:</strong> {{ organization.created_at|date:"F d, Y" }}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    {% if is_mentor or is_admin %}
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>Mentors ({{ mentors.count }})</h5>
+            </div>
+            <div class="card-body">
+                {% if mentors %}
+                    <div class="list-group">
+                        {% for mentor in mentors %}
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-1">{{ mentor.user.get_full_name|default:mentor.user.username }}</h6>
+                                        <small class="text-muted">{{ mentor.user.email }}</small>
+                                    </div>
+                                    <span class="badge bg-info">{{ mentor.get_mentees.count }} mentees</span>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted">No mentors yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="col-md-{% if is_mentor or is_admin %}6{% else %}12{% endif %}">
+        <div class="card">
+            <div class="card-header">
+                <h5>
+                    {% if is_mentee %}
+                        Your Information
+                    {% else %}
+                        Mentees ({{ mentees.count }})
+                    {% endif %}
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if mentees %}
+                    <div class="list-group">
+                        {% for mentee in mentees %}
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-1">{{ mentee.user.get_full_name|default:mentee.user.username }}</h6>
+                                        <small class="text-muted">{{ mentee.user.email }}</small>
+                                        {% if is_mentor or is_admin %}
+                                            {% if mentee.get_current_mentor %}
+                                                <br><small class="text-info">Mentor: {{ mentee.get_current_mentor.user.username }}</small>
+                                            {% else %}
+                                                <br><small class="text-warning">Unassigned</small>
+                                            {% endif %}
+                                        {% endif %}
+                                    </div>
+                                    {% if is_admin %}
+                                        <a href="{% url 'accounts:mentor_assign' mentee.id %}"
+                                           class="btn btn-sm btn-outline-primary">
+                                            Assign Mentor
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted">No mentees yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if is_admin %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Admin Actions</h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-2">Share this join code with new mentees:</p>
+                <div class="input-group">
+                    <input type="text" class="form-control" value="{{ organization.join_code }}" readonly id="joinCodeInput">
+                    <button class="btn btn-primary" onclick="copyJoinCode()">Copy</button>
+                </div>
+                <a href="{% url 'accounts:profile' %}" class="btn btn-outline-secondary mt-3">Back to Profile</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% elif is_mentee %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Your Mentor</h5>
+            </div>
+            <div class="card-body">
+                {% with current_mentor=user.profile.get_current_mentor %}
+                    {% if current_mentor %}
+                        <p><strong>Name:</strong> {{ current_mentor.user.get_full_name|default:current_mentor.user.username }}</p>
+                        <p><strong>Email:</strong> {{ current_mentor.user.email }}</p>
+                        {% if current_mentor.bio %}
+                            <p><strong>About:</strong> {{ current_mentor.bio }}</p>
+                        {% endif %}
+                        <a href="{% url 'notifications:send' current_mentor.user.username %}" class="btn btn-primary">Send Message</a>
+                    {% else %}
+                        <p class="text-warning">You haven't been assigned a mentor yet.</p>
+                        <p class="text-muted">Contact your organization administrator to get assigned.</p>
+                    {% endif %}
+                {% endwith %}
+                <a href="{% url 'accounts:profile' %}" class="btn btn-outline-secondary mt-3">Back to Profile</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="row mt-4">
+    <div class="col-12">
+        <a href="{% url 'accounts:profile' %}" class="btn btn-outline-secondary">Back to Profile</a>
+    </div>
+</div>
+{% endif %}
+
+<script>
+function copyJoinCode() {
+    const joinCode = '{{ organization.join_code }}';
+    navigator.clipboard.writeText(joinCode).then(function() {
+        alert('Join code copied: ' + joinCode);
+    });
+}
+</script>
+{% endblock %}

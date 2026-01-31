@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+{% block title %}Todo List Details{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'todo:mentor_todos' %}">Mentee Todos</a></li>
+                <li class="breadcrumb-item active">Todo Details</li>
+            </ol>
+        </nav>
+
+        <div class="card">
+            <div class="card-header">
+                <h5>Todo List - {{ todo_list.mentee.get_full_name|default:todo_list.mentee.username }}</h5>
+                <small class="text-muted">{{ todo_list.submission_date|date:"l, F d, Y" }}</small>
+            </div>
+            <div class="card-body">
+                <h6>Tasks:</h6>
+                {% for task in todo_list.tasks.all %}
+                    <div class="card mb-2">
+                        <div class="card-body py-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="badge bg-{{ task.priority }} me-2">
+                                        {% if task.priority == 'high' %}High{% elif task.priority == 'medium' %}Medium{% else %}Low{% endif %}
+                                    </span>
+                                    {{ task.title }}
+                                </div>
+                                <span class="badge bg-{{ task.status }}">
+                                    {% if task.status == 'completed' %}Completed{% else %}Pending{% endif %}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                {% empty %}
+                    <p class="text-muted">No tasks in this todo list.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5>Add Mentor Notes</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="{{ form.mentor_notes.id_for_label }}" class="form-label">Mentor Notes:</label>
+                        {{ form.mentor_notes }}
+                    </div>
+                    <div class="mb-3 form-check">
+                        {{ form.is_submitted_to_mentor }}
+                        <label for="{{ form.is_submitted_to_mentor.id_for_label }}" class="form-check-label">
+                            Mark as reviewed by mentor
+                        </label>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Save Notes</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    textarea {
+        width: 100%;
+        min-height: 100px;
+        padding: 8px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+
+{% block title %}Register - Mentorship Platform{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="text-center mb-0">Create Your Account</h2>
+                <p class="text-center text-muted mb-0">Join the mentorship community</p>
+            </div>
+            <div class="card-body">
+                <form method="post" id="registerForm">
+                    {% csrf_token %}
+
+                    <!-- Account Information -->
+                    <h5 class="mb-3">Account Information</h5>
+                    <div class="mb-3">
+                        <label for="{{ form.username.id_for_label }}" class="form-label">Username *</label>
+                        {{ form.username }}
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.email.id_for_label }}" class="form-label">Email *</label>
+                        {{ form.email }}
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.password1.id_for_label }}" class="form-label">Password *</label>
+                            {{ form.password1 }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.password2.id_for_label }}" class="form-label">Confirm Password *</label>
+                            {{ form.password2 }}
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <!-- Role Selection -->
+                    <h5 class="mb-3">I want to join as:</h5>
+                    <div class="mb-3 p-3 bg-light rounded">
+                        {% for choice in form.role %}
+                            <div class="form-check mb-2">
+                                {{ choice.tag }}
+                                <label class="form-check-label" for="{{ choice.id_for_label }}">
+                                    <strong>{% if choice.value == 'mentee' %}Mentee{% else %}Mentor{% endif %}</strong>
+                                    <small class="text-muted d-block">
+                                        {% if choice.value == 'mentee' %}
+                                            I want to be guided and improve my skills
+                                        {% else %}
+                                            I want to guide others and share my expertise
+                                        {% endif %}
+                                    </small>
+                                </label>
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Organization Code (conditional) -->
+                    <div id="orgCodeSection" class="mb-3" style="display: none;">
+                        <label for="{{ form.join_code.id_for_label }}" class="form-label">
+                            Organization Join Code *
+                        </label>
+                        {{ form.join_code }}
+                        <small class="form-text text-muted">
+                            Ask your organization administrator for the 8-character join code.
+                        </small>
+                    </div>
+
+                    {% if form.errors %}
+                        <div class="alert alert-danger">
+                            {% for field in form %}
+                                {% for error in field.errors %}
+                                    <p>{{ error }}</p>
+                                {% endfor %}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">Create Account</button>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer text-center">
+                <small>Already have an account? <a href="{% url 'accounts:login' %}">Login here</a></small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const roleInputs = document.querySelectorAll('input[name="role"]');
+    const orgCodeSection = document.getElementById('orgCodeSection');
+    const joinCodeInput = document.querySelector('#{{ form.join_code.id_for_label }}');
+
+    roleInputs.forEach(input => {
+        input.addEventListener('change', function() {
+            if (this.value === 'mentee') {
+                orgCodeSection.style.display = 'block';
+                joinCodeInput.required = true;
+            } else {
+                orgCodeSection.style.display = 'none';
+                joinCodeInput.required = false;
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

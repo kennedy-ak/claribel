@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}Report Details{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'reports:mentor_reports' %}">Mentee Reports</a></li>
+                <li class="breadcrumb-item active">Report Details</li>
+            </ol>
+        </nav>
+
+        <div class="card">
+            <div class="card-header">
+                <h5>Daily Report - {{ report.mentee.get_full_name|default:report.mentee.username }}</h5>
+                <small class="text-muted">{{ report.report_date|date:"l, F d, Y" }}</small>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <strong>Mood:</strong>
+                    <span class="badge bg-{% if report.mood <= 2 %}danger{% elif report.mood == 3 %}warning{% else %}success{% endif %}">
+                        {% if report.mood == 1 %}Very Bad 😞{% elif report.mood == 2 %}Bad 😕{% elif report.mood == 3 %}Neutral 😐{% elif report.mood == 4 %}Good 😊{% else %}Very Good 🤩{% endif %}
+                    </span>
+                </div>
+
+                <div class="mb-3">
+                    <h6>Achievements:</h6>
+                    <p>{{ report.achievements|linebreaks }}</p>
+                </div>
+
+                {% if report.challenges %}
+                    <div class="mb-3">
+                        <h6>Challenges:</h6>
+                        <p>{{ report.challenges|linebreaks }}</p>
+                    </div>
+                {% else %}
+                    <p class="text-muted">No challenges reported.</p>
+                {% endif %}
+
+                {% if report.learnings %}
+                    <div class="mb-3">
+                        <h6>Learnings:</h6>
+                        <p>{{ report.learnings|linebreaks }}</p>
+                    </div>
+                {% else %}
+                    <p class="text-muted">No learnings reported.</p>
+                {% endif %}
+
+                <div class="mb-3">
+                    <h6>Next Steps:</h6>
+                    <p>{{ report.next_steps|linebreaks }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5>Provide Feedback</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="mentor_feedback" class="form-label">Your Feedback:</label>
+                        <textarea name="mentor_feedback" id="mentor_feedback" class="form-control" rows="4" placeholder="Provide constructive feedback and encouragement...">{% if report.mentor_feedback %}{{ report.mentor_feedback }}{% endif %}</textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Save Feedback</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

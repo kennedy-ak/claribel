@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block title %}Create Organization{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-header">
+                <h2>Create a New Organization</h2>
+                <p class="text-muted mb-0">Start your mentorship program by creating an organization</p>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label for="{{ form.name.id_for_label }}" class="form-label">Organization Name *</label>
+                        {{ form.name }}
+                        <small class="form-text text-muted">Choose a unique name for your organization</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.description.id_for_label }}" class="form-label">Description</label>
+                        {{ form.description }}
+                        <small class="form-text text-muted">Briefly describe your organization's mission</small>
+                    </div>
+
+                    {% if form.errors %}
+                        <div class="alert alert-danger">
+                            {% for field in form %}
+                                {% for error in field.errors %}
+                                    <p>{{ error }}</p>
+                                {% endfor %}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Note:</strong> When you create an organization:
+                        <ul class="mb-0 mt-2">
+                            <li>You'll automatically become a mentor in the organization</li>
+                            <li>A unique join code will be generated for mentees</li>
+                            <li>You can add more mentors later from the organization dashboard</li>
+                        </ul>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Create Organization</button>
+                    <a href="{% url 'accounts:profile' %}" class="btn btn-outline-secondary">Cancel</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+
+{% block title %}Create Todo List{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-header">
+                <h2>Create Your Todo List</h2>
+                <p class="text-muted mb-0">Plan your day - add tasks you want to accomplish today</p>
+            </div>
+            <div class="card-body">
+                <form method="post" id="todo-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="item_count" id="item-count" value="1">
+
+                    <div id="todo-items">
+                        <div class="card mb-3 todo-item" data-index="0">
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Task Title</label>
+                                    <input type="text" name="title_0" class="form-control" required placeholder="Enter task title...">
+                                </div>
+                                <div class="mb-0">
+                                    <label class="form-label">Priority</label>
+                                    <select name="priority_0" class="form-select">
+                                        <option value="low">Low</option>
+                                        <option value="medium" selected>Medium</option>
+                                        <option value="high">High</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-secondary" onclick="addTodoItem()">
+                            <i class="bi bi-plus-circle"></i> Add Task
+                        </button>
+                        <button type="submit" class="btn btn-primary">Submit Todo List</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let itemCount = 1;
+
+function addTodoItem() {
+    const container = document.getElementById('todo-items');
+    const index = itemCount++;
+
+    const newItem = document.createElement('div');
+    newItem.className = 'card mb-3 todo-item';
+    newItem.setAttribute('data-index', index);
+    newItem.innerHTML = `
+        <div class="card-body">
+            <div class="mb-3">
+                <label class="form-label">Task Title</label>
+                <input type="text" name="title_${index}" class="form-control" required placeholder="Enter task title...">
+            </div>
+            <div class="mb-0">
+                <label class="form-label">Priority</label>
+                <select name="priority_${index}" class="form-select">
+                    <option value="low">Low</option>
+                    <option value="medium" selected>Medium</option>
+                    <option value="high">High</option>
+                </select>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-danger mt-2" onclick="removeTodoItem(this)">Remove</button>
+        </div>
+    `;
+
+    container.appendChild(newItem);
+    document.getElementById('item-count').value = index + 1;
+}
+
+function removeTodoItem(button) {
+    const item = button.closest('.todo-item');
+    item.remove();
+}
+
+document.getElementById('todo-form').addEventListener('submit', function(e) {
+    const items = document.querySelectorAll('.todo-item');
+    document.getElementById('item-count').value = items.length;
+});
+</script>
+{% endblock %}

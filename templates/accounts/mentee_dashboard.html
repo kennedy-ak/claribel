@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+
+{% block title %}Mentee Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1>Mentee Dashboard</h1>
+        {% if organization %}
+            <p class="text-muted">{{ organization.name }} | Welcome back, {{ user.first_name|default:user.username }}!</p>
+        {% else %}
+            <p class="text-muted">Welcome back, {{ user.first_name|default:user.username }}!</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">Today's Tasks</h5>
+                <p class="card-text">Create your daily todo list</p>
+                <a href="{% url 'todo:create' %}" class="btn btn-primary">Create Todo</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">Evening Report</h5>
+                <p class="card-text">Share your progress</p>
+                <a href="{% url 'reports:create' %}" class="btn btn-success">Submit Report</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">Messages</h5>
+                <p class="card-text">Communicate with your mentor</p>
+                <a href="{% url 'notifications:inbox' %}" class="btn btn-info">Inbox</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if mentor %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Your Current Mentor</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Name:</strong> {{ mentor.user.get_full_name|default:mentor.user.username }}</p>
+                    <p><strong>Email:</strong> {{ mentor.user.email }}</p>
+                    {% if mentor.phone_number %}
+                        <p><strong>Phone:</strong> {{ mentor.phone_number }}</p>
+                    {% endif %}
+                    {% if mentor.bio %}
+                        <p><strong>About:</strong> {{ mentor.bio }}</p>
+                    {% endif %}
+                    <a href="{% url 'notifications:send' mentor.user.username %}" class="btn btn-primary">Send Message</a>
+                    <a href="{% url 'accounts:organization_detail' organization.id %}" class="btn btn-outline-info">View Organization</a>
+                </div>
+            </div>
+        </div>
+    </div>
+{% elif organization %}
+    <div class="alert alert-warning mt-4">
+        <h5>No mentor assigned yet!</h5>
+        <p>You've joined <strong>{{ organization.name }}</strong>, but haven't been assigned a mentor yet.</p>
+        <p class="mb-0">Contact your organization administrator to get assigned to a mentor.</p>
+    </div>
+{% else %}
+    <div class="alert alert-warning mt-4">
+        <h5>You're not in an organization yet!</h5>
+        <p>To get the most out of the mentorship platform, you need to join an organization.</p>
+        <a href="{% url 'accounts:organization_join' %}" class="btn btn-primary">Join Organization</a>
+    </div>
+{% endif %}
+{% endblock %}
