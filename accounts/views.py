@@ -15,6 +15,8 @@ def register_view(request):
             # Get form data
             role = form.cleaned_data['role']
             join_code = form.cleaned_data.get('join_code', '').strip().upper()
+            org_name = form.cleaned_data.get('org_name', '').strip()
+            org_description = form.cleaned_data.get('org_description', '').strip()
 
             user = form.save()
 
@@ -54,7 +56,20 @@ def register_view(request):
             elif role == 'mentor':
                 user.profile.role = 'mentor'
                 user.profile.save()
-                messages.info(request, 'Mentor account created! Please ask an administrator to add you to an organization.')
+
+                # Create organization if mentor provided org name
+                if org_name:
+                    organization = Organization.objects.create(
+                        name=org_name,
+                        description=org_description or '',
+                        created_by=user,
+                        is_active=True
+                    )
+                    user.profile.organization = organization
+                    user.profile.save()
+                    messages.success(request, f'Organization "{organization.name}" created successfully! Your join code is: {organization.join_code}')
+                else:
+                    messages.info(request, 'Mentor account created! Please ask an administrator to add you to an organization, or create your own organization.')
 
             return redirect('accounts:login')
     else:

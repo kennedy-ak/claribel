@@ -57,7 +57,7 @@
                         {% endfor %}
                     </div>
 
-                    <!-- Organization Code (conditional) -->
+                    <!-- Organization Code (for Mentees) -->
                     <div id="orgCodeSection" class="mb-3" style="display: none;">
                         <label for="{{ form.join_code.id_for_label }}" class="form-label">
                             Organization Join Code *
@@ -66,6 +66,28 @@
                         <small class="form-text text-muted">
                             Ask your organization administrator for the 8-character join code.
                         </small>
+                    </div>
+
+                    <!-- Organization Creation (for Mentors) -->
+                    <div id="orgCreateSection" class="mb-3" style="display: none;">
+                        <div class="mb-3">
+                            <label for="{{ form.org_name.id_for_label }}" class="form-label">
+                                Organization Name *
+                            </label>
+                            {{ form.org_name }}
+                            <small class="form-text text-muted">
+                                Create a new organization and become its administrator.
+                            </small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="{{ form.org_description.id_for_label }}" class="form-label">
+                                Organization Description
+                            </label>
+                            {{ form.org_description }}
+                            <small class="form-text text-muted">
+                                Optional: Provide a brief description of your organization.
+                            </small>
+                        </div>
                     </div>
 
                     {% if form.errors %}
@@ -94,14 +116,24 @@
 document.addEventListener('DOMContentLoaded', function() {
     const roleInputs = document.querySelectorAll('input[name="role"]');
     const orgCodeSection = document.getElementById('orgCodeSection');
+    const orgCreateSection = document.getElementById('orgCreateSection');
     const joinCodeInput = document.querySelector('#{{ form.join_code.id_for_label }}');
+    const orgNameInput = document.querySelector('#{{ form.org_name.id_for_label }}');
 
     roleInputs.forEach(input => {
         input.addEventListener('change', function() {
             if (this.value === 'mentee') {
+                // Show join code section for mentees
                 orgCodeSection.style.display = 'block';
                 joinCodeInput.required = true;
-            } else {
+                // Hide organization creation section
+                orgCreateSection.style.display = 'none';
+                orgNameInput.required = false;
+            } else if (this.value === 'mentor') {
+                // Show organization creation section for mentors
+                orgCreateSection.style.display = 'block';
+                orgNameInput.required = true;
+                // Hide join code section
                 orgCodeSection.style.display = 'none';
                 joinCodeInput.required = false;
             }

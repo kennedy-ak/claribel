@@ -29,6 +29,30 @@ class RegistrationForm(UserCreationForm):
         help_text='Ask your organization administrator for the join code. Leave empty if you don\'t have one yet.'
     )
 
+    # Organization fields for mentors
+    org_name = forms.CharField(
+        max_length=200,
+        required=False,
+        label='Organization Name (for Mentors)',
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter organization name'
+        }),
+        help_text='Create a new organization if you\'re a mentor. Leave empty if you don\'t want to create one.'
+    )
+
+    org_description = forms.CharField(
+        max_length=500,
+        required=False,
+        label='Organization Description (for Mentors)',
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 3,
+            'placeholder': 'Brief description of your organization'
+        }),
+        help_text='Optional: Provide a description for your organization.'
+    )
+
     email = forms.EmailField(
         required=True,
         widget=forms.EmailInput(attrs={'class': 'form-control'})

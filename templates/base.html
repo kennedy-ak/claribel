@@ -424,12 +424,21 @@
                                             <span>My Dashboard</span>
                                         </a>
                                     </li>
+                                    {% if user.profile.organization %}
                                     <li>
                                         <a class="dropdown-item" href="{% url 'accounts:organization_detail' user.profile.organization.id %}">
                                             <i class="bi bi-building"></i>
                                             <span>My Organization</span>
                                         </a>
                                     </li>
+                                    {% else %}
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'accounts:organization_create' %}">
+                                            <i class="bi bi-plus-circle"></i>
+                                            <span>Create Organization</span>
+                                        </a>
+                                    </li>
+                                    {% endif %}
                                 {% else %}
                                     <li>
                                         <a class="dropdown-item" href="{% url 'accounts:mentee_dashboard' %}">
@@ -437,12 +446,14 @@
                                             <span>My Dashboard</span>
                                         </a>
                                     </li>
+                                    {% if user.profile.organization %}
                                     <li>
                                         <a class="dropdown-item" href="{% url 'accounts:organization_detail' user.profile.organization.id %}">
                                             <i class="bi bi-building"></i>
                                             <span>My Organization</span>
                                         </a>
                                     </li>
+                                    {% endif %}
                                 {% endif %}
                             </ul>
                         </li>
