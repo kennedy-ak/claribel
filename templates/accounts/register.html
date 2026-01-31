@@ -44,11 +44,11 @@
                             <div class="form-check mb-2">
                                 {{ choice.tag }}
                                 <label class="form-check-label" for="{{ choice.id_for_label }}">
-                                    <strong>{% if choice.value == 'mentee' %}Mentee{% else %}Mentor{% endif %}</strong>
+                                    <strong>{{ choice.choice_label }}</strong>
                                     <small class="text-muted d-block">
-                                        {% if choice.value == 'mentee' %}
+                                        {% if 'Mentee' in choice.choice_label %}
                                             I want to be guided and improve my skills
-                                        {% else %}
+                                        {% elif 'Mentor' in choice.choice_label %}
                                             I want to guide others and share my expertise
                                         {% endif %}
                                     </small>

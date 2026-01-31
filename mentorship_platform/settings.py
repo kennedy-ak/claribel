@@ -30,6 +30,13 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['mentor.vendlyghana.space', 'localhost', '127.0.0.1']
 
+# CSRF Trusted Origins for cross-origin requests
+CSRF_TRUSTED_ORIGINS = [
+    'https://mentor.vendlyghana.space',
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+]
+
 
 # Application definition
 
