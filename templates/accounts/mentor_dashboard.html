@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block title %}Mentor Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1>Mentor Dashboard</h1>
+                <p class="text-muted">{{ organization.name }} | Welcome back, {{ user.first_name|default:user.username }}!</p>
+            </div>
+            <a href="{% url 'accounts:organization_detail' organization.id %}" class="btn btn-outline-info">
+                View Organization
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">My Mentees</h5>
+                <p class="card-text display-4">{{ mentees.count }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<h3 class="mt-4">My Mentees</h3>
+{% if mentees %}
+    <div class="row">
+        {% for mentee in mentees %}
+            <div class="col-md-4 mb-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ mentee.user.get_full_name|default:mentee.user.username }}</h5>
+                        <p class="card-text">
+                            <small class="text-muted">{{ mentee.user.email }}</small>
+                        </p>
+                        {% if mentee.bio %}
+                            <p class="card-text"><small>{{ mentee.bio|truncatewords:15 }}</small></p>
+                        {% endif %}
+                        <div class="btn-group btn-group-sm" role="group">
+                            <a href="{% url 'todo:mentor_todos' %}" class="btn btn-outline-primary">View Todos</a>
+                            <a href="{% url 'reports:mentor_reports' %}" class="btn btn-outline-secondary">View Reports</a>
+                            <a href="{% url 'notifications:send' mentee.user.username %}" class="btn btn-outline-info">Message</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="alert alert-info">
+        <p>No mentees assigned to you yet. Mentees will be automatically assigned by the organization administrator.</p>
+    </div>
+{% endif %}
+{% endblock %}

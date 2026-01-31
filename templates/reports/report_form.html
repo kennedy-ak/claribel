@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block title %}Submit Daily Report{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-header">
+                <h2>Submit Your Daily Report</h2>
+                <p class="text-muted mb-0">Reflect on your progress and plan ahead</p>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label for="mood" class="form-label">How are you feeling today?</label>
+                        <select name="mood" id="mood" class="form-select" required>
+                            <option value="1">Very Bad 😞</option>
+                            <option value="2">Bad 😕</option>
+                            <option value="3" selected>Neutral 😐</option>
+                            <option value="4">Good 😊</option>
+                            <option value="5">Very Good 🤩</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="achievements" class="form-label">What did you accomplish today? *</label>
+                        <textarea name="achievements" id="achievements" class="form-control" rows="3" required placeholder="List your achievements..."></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="challenges" class="form-label">What challenges did you face?</label>
+                        <textarea name="challenges" id="challenges" class="form-control" rows="3" placeholder="Describe any difficulties..."></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="learnings" class="form-label">What did you learn today?</label>
+                        <textarea name="learnings" id="learnings" class="form-control" rows="3" placeholder="Share your learnings..."></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="next_steps" class="form-label">What are your next steps? *</label>
+                        <textarea name="next_steps" id="next_steps" class="form-control" rows="3" required placeholder="Your plans, action items, or goals for the next session..."></textarea>
+                        <small class="form-text text-muted">This can be future goals, tasks to work on, or things to discuss with your mentor.</small>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Submit Report</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

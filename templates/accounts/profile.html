@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+
+{% block title %}Profile - Mentorship Platform{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-header">
+                <h2>Welcome, {{ user.username }}!</h2>
+                <p class="text-muted mb-0">{{ user.email }}</p>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Role:</strong>
+                            <span class="badge bg-{{ user_profile.role|lower }} {{ user_profile.role|lower }}">{{ user_profile.get_role_display }}</span>
+                        </p>
+                        <p><strong>Email Notifications:</strong> {{ user_profile.email_notifications_enabled|yesno:"Enabled,Disabled" }}</p>
+                        <p><strong>SMS Notifications:</strong> {{ user_profile.sms_notifications_enabled|yesno:"Enabled,Disabled" }}</p>
+
+                        {% if user_profile.organization %}
+                            <p><strong>Organization:</strong>
+                                <a href="{% url 'accounts:organization_detail' user_profile.organization.id %}">
+                                    {{ user_profile.organization.name }}
+                                </a>
+                            </p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <hr>
+
+                <h5>Quick Actions</h5>
+                {% if user_profile.role == 'mentor' %}
+                    {% if user_profile.organization %}
+                        <a href="{% url 'accounts:mentor_dashboard' %}" class="btn btn-primary">Go to Dashboard</a>
+                        <a href="{% url 'accounts:organization_detail' user_profile.organization.id %}" class="btn btn-outline-info">View Organization</a>
+                    {% else %}
+                        <a href="{% url 'accounts:organization_create' %}" class="btn btn-success">Create Organization</a>
+                        <a href="{% url 'accounts:organization_join' %}" class="btn btn-outline-primary">Join Organization</a>
+                    {% endif %}
+                {% else %}
+                    {% if user_profile.organization %}
+                        <a href="{% url 'accounts:mentee_dashboard' %}" class="btn btn-primary">Go to Dashboard</a>
+                        <a href="{% url 'accounts:organization_detail' user_profile.organization.id %}" class="btn btn-outline-info">View Organization</a>
+                    {% else %}
+                        <a href="{% url 'accounts:organization_join' %}" class="btn btn-primary">Join Organization</a>
+                        <p class="text-muted mt-2">You need to join an organization to be assigned a mentor.</p>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+
+        {% if user_profile.role == 'mentee' and current_mentor %}
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h5>Your Current Mentor</h5>
+                    <p><strong>Name:</strong> {{ current_mentor.user.get_full_name|default:current_mentor.user.username }}</p>
+                    <p><strong>Email:</strong> {{ current_mentor.user.email }}</p>
+                    {% if current_mentor.bio %}
+                        <p><strong>Bio:</strong> {{ current_mentor.bio }}</p>
+                    {% endif %}
+                    <a href="{% url 'notifications:send' current_mentor.user.username %}" class="btn btn-outline-primary">Send Message</a>
+                </div>
+            </div>
+        {% elif user_profile.role == 'mentee' and user_profile.organization %}
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h5>Mentor Assignment</h5>
+                    <p class="text-warning">You haven't been assigned a mentor yet.</p>
+                    <p class="text-muted">Contact your organization administrator to get assigned.</p>
+                </div>
+            </div>
+        {% endif %}
+
+        {% if user_profile.role == 'mentor' and user_profile.organization %}
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h5>Your Mentees</h5>
+                    {% with mentees=user_profile.get_mentees %}
+                        {% if mentees %}
+                            <ul class="list-unstyled">
+                                {% for mentee in mentees %}
+                                    <li class="mb-2">
+                                        <strong>{{ mentee.user.get_full_name|default:mentee.user.username }}</strong>
+                                        <br><small class="text-muted">{{ mentee.user.email }}</small>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p class="text-muted">No mentees assigned yet.</p>
+                        {% endif %}
+                    {% endwith %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

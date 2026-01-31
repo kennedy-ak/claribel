@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block title %}Assign Mentor{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6 offset-md-3">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'accounts:organization_detail' organization.id %}">{{ organization.name }}</a></li>
+                <li class="breadcrumb-item active">Assign Mentor</li>
+            </ol>
+        </nav>
+
+        <div class="card">
+            <div class="card-header">
+                <h2>Assign Mentor</h2>
+                <p class="text-muted mb-0">For mentee: <strong>{{ mentee.user.username }}</strong></p>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label for="{{ form.mentor.id_for_label }}" class="form-label">Select Mentor *</label>
+                        {{ form.mentor }}
+                        <small class="form-text text-muted">
+                            Choose from available mentors in {{ organization.name }}
+                        </small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.notes.id_for_label }}" class="form-label">Notes</label>
+                        {{ form.notes }}
+                        <small class="form-text text-muted">Optional: Reason for this assignment or reassignment</small>
+                    </div>
+
+                    {% if form.errors %}
+                        <div class="alert alert-danger">
+                            {% for field in form %}
+                                {% for error in field.errors %}
+                                    <p>{{ error }}</p>
+                                {% endfor %}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <button type="submit" class="btn btn-primary">Save Assignment</button>
+                    <a href="{% url 'accounts:organization_detail' organization.id %}" class="btn btn-outline-secondary">Cancel</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    textarea {
+        width: 100%;
+        min-height: 80px;
+        padding: 8px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block title %}Mentee Todo Lists{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1>Mentee Todo Lists</h1>
+        <p class="text-muted">{{ today|date:"l, F d, Y" }}</p>
+    </div>
+</div>
+
+{% if todos %}
+    <div class="row">
+        {% for todo in todos %}
+            <div class="col-md-6 mb-3">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">{{ todo.mentee.get_full_name|default:todo.mentee.username }}</h5>
+                            <span class="badge bg-info">{{ todo.tasks.count }} tasks</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <h6>Tasks:</h6>
+                        <ul class="list-unstyled">
+                            {% for task in todo.tasks.all %}
+                                <li class="mb-2">
+                                    <span class="badge bg-{{ task.priority }} me-2">
+                                        {% if task.priority == 'high' %}High{% elif task.priority == 'medium' %}Medium{% else %}Low{% endif %}
+                                    </span>
+                                    {{ task.title }}
+                                </li>
+                            {% empty %}
+                                <li class="text-muted">No tasks added</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    <div class="card-footer">
+                        <a href="{% url 'todo:mentor_todo_detail' todo.id %}" class="btn btn-primary btn-sm">View Details & Add Notes</a>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="alert alert-info">
+        <p>No todo lists submitted by your mentees today yet.</p>
+        <p>Check back later or view past submissions.</p>
+    </div>
+{% endif %}
+{% endblock %}
