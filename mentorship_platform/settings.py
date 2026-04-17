@@ -103,9 +103,9 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'mentorship_platform.wsgi.application'
-# Supabase (Google OAuth)
-SUPABASE_URL = config('SUPABASE_URL', default='')
-SUPABASE_ANON_KEY = config('SUPABASE_ANON_KEY', default='')
+# Google OAuth (direct)
+GOOGLE_CLIENT_ID = config('GOOGLE_CLIENT_ID', default='')
+GOOGLE_CLIENT_SECRET = config('GOOGLE_CLIENT_SECRET', default='')
 
 # Feature Flags
 ALLOW_MENTOR_REGISTRATION = config('ALLOW_MENTOR_REGISTRATION', default=False, cast=bool)
