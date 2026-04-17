@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib import messages
@@ -10,6 +11,28 @@ from .forms import RegistrationForm, OrganizationForm, MentorAssignmentForm, Pro
 from notifications.services import NotificationService
 
 ALLOW_MENTOR_REGISTRATION = getattr(settings, 'ALLOW_MENTOR_REGISTRATION', True)
+
+
+def login_view(request):
+    if request.user.is_authenticated:
+        return redirect('accounts:mentor_dashboard' if request.user.profile.role == 'mentor' else 'accounts:mentee_dashboard')
+
+    if request.method == 'POST':
+        form = AuthenticationForm(request, data=request.POST)
+        if form.is_valid():
+            user = form.get_user()
+            login(request, user)
+            if request.POST.get('remember_me'):
+                request.session.set_expiry(60 * 60 * 24 * 30)  # 30 days
+            else:
+                request.session.set_expiry(0)  # expires when browser closes
+            return redirect(request.GET.get('next') or (
+                'accounts:mentor_dashboard' if user.profile.role == 'mentor' else 'accounts:mentee_dashboard'
+            ))
+    else:
+        form = AuthenticationForm(request)
+
+    return render(request, 'accounts/login.html', {'form': form})
 
 
 def register_view(request):
