@@ -10,7 +10,7 @@ echo "=== Running database migrations ==="
 python manage.py migrate --noinput
 
 echo "=== Collecting static files ==="
-python manage.py collectstatic --noinput --quiet
+python manage.py collectstatic --noinput -v 0
 
 echo "=== Registering cron jobs ==="
 python manage.py crontab add
