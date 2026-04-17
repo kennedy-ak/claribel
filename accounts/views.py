@@ -13,36 +13,69 @@ from notifications.services import NotificationService
 ALLOW_MENTOR_REGISTRATION = getattr(settings, 'ALLOW_MENTOR_REGISTRATION', True)
 
 
-def _get_supabase():
-    from supabase import create_client
-    return create_client(settings.SUPABASE_URL, settings.SUPABASE_ANON_KEY)
-
-
 def google_login_view(request):
-    """Redirect user to Supabase Google OAuth."""
-    supabase = _get_supabase()
-    callback_url = request.build_absolute_uri('/accounts/google/callback/')
-    response = supabase.auth.sign_in_with_oauth({
-        'provider': 'google',
-        'options': {'redirect_to': callback_url},
-    })
-    return redirect(response.url)
+    """Redirect user to Google OAuth."""
+    import secrets
+    from urllib.parse import urlencode
+
+    state = secrets.token_urlsafe(32)
+    request.session['google_oauth_state'] = state
+
+    params = {
+        'client_id': settings.GOOGLE_CLIENT_ID,
+        'redirect_uri': request.build_absolute_uri('/accounts/google/callback/'),
+        'response_type': 'code',
+        'scope': 'openid email profile',
+        'state': state,
+        'access_type': 'offline',
+        'prompt': 'select_account',
+    }
+    auth_url = 'https://accounts.google.com/o/oauth2/v2/auth?' + urlencode(params)
+    return redirect(auth_url)
 
 
 def google_callback_view(request):
-    """Handle Supabase OAuth callback — exchange code for session."""
+    """Handle Google OAuth callback — exchange code for user info."""
+    import requests as http_requests
+
+    state = request.session.get('google_oauth_state')
     code = request.GET.get('code')
-    if not code:
+
+    if not code or state != request.GET.get('state'):
         messages.error(request, 'Google login failed. Please try again.')
         return redirect('accounts:login')
 
     try:
-        supabase = _get_supabase()
-        session_response = supabase.auth.exchange_code_for_session({'auth_code': code})
-        supabase_user = session_response.user
-        email = supabase_user.email
-        full_name = (supabase_user.user_metadata or {}).get('full_name', '')
-        first_name, _, last_name = full_name.partition(' ')
+        token_response = http_requests.post(
+            'https://oauth2.googleapis.com/token',
+            data={
+                'code': code,
+                'client_id': settings.GOOGLE_CLIENT_ID,
+                'client_secret': settings.GOOGLE_CLIENT_SECRET,
+                'redirect_uri': request.build_absolute_uri('/accounts/google/callback/'),
+                'grant_type': 'authorization_code',
+            },
+            timeout=10,
+        )
+        token_data = token_response.json()
+        if 'error' in token_data:
+            raise ValueError(token_data.get('error_description', 'Token exchange failed'))
+
+        access_token = token_data['access_token']
+
+        userinfo = http_requests.get(
+            'https://www.googleapis.com/oauth2/v3/userinfo',
+            headers={'Authorization': f'Bearer {access_token}'},
+            timeout=10,
+        ).json()
+
+        email = userinfo.get('email')
+        if not email:
+            raise ValueError('No email returned from Google')
+
+        first_name = userinfo.get('given_name', '')
+        last_name = userinfo.get('family_name', '')
+
     except Exception:
         messages.error(request, 'Google login failed. Please try again.')
         return redirect('accounts:login')
