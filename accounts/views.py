@@ -13,135 +13,6 @@ from notifications.services import NotificationService
 ALLOW_MENTOR_REGISTRATION = getattr(settings, 'ALLOW_MENTOR_REGISTRATION', True)
 
 
-def google_login_view(request):
-    """Redirect user to Google OAuth."""
-    import secrets
-    from urllib.parse import urlencode
-
-    state = secrets.token_urlsafe(32)
-    request.session['google_oauth_state'] = state
-
-    params = {
-        'client_id': settings.GOOGLE_CLIENT_ID,
-        'redirect_uri': request.build_absolute_uri('/accounts/google/callback/'),
-        'response_type': 'code',
-        'scope': 'openid email profile',
-        'state': state,
-        'access_type': 'offline',
-        'prompt': 'select_account',
-    }
-    auth_url = 'https://accounts.google.com/o/oauth2/v2/auth?' + urlencode(params)
-    return redirect(auth_url)
-
-
-def google_callback_view(request):
-    """Handle Google OAuth callback — exchange code for user info."""
-    import requests as http_requests
-
-    state = request.session.get('google_oauth_state')
-    code = request.GET.get('code')
-
-    if not code or state != request.GET.get('state'):
-        messages.error(request, 'Google login failed. Please try again.')
-        return redirect('accounts:login')
-
-    try:
-        token_response = http_requests.post(
-            'https://oauth2.googleapis.com/token',
-            data={
-                'code': code,
-                'client_id': settings.GOOGLE_CLIENT_ID,
-                'client_secret': settings.GOOGLE_CLIENT_SECRET,
-                'redirect_uri': request.build_absolute_uri('/accounts/google/callback/'),
-                'grant_type': 'authorization_code',
-            },
-            timeout=10,
-        )
-        token_data = token_response.json()
-        if 'error' in token_data:
-            raise ValueError(token_data.get('error_description', 'Token exchange failed'))
-
-        access_token = token_data['access_token']
-
-        userinfo = http_requests.get(
-            'https://www.googleapis.com/oauth2/v3/userinfo',
-            headers={'Authorization': f'Bearer {access_token}'},
-            timeout=10,
-        ).json()
-
-        email = userinfo.get('email')
-        if not email:
-            raise ValueError('No email returned from Google')
-
-        first_name = userinfo.get('given_name', '')
-        last_name = userinfo.get('family_name', '')
-
-    except Exception:
-        messages.error(request, 'Google login failed. Please try again.')
-        return redirect('accounts:login')
-
-    # Find or create the Django user
-    user, created = User.objects.get_or_create(
-        email=email,
-        defaults={
-            'username': email.split('@')[0],
-            'first_name': first_name,
-            'last_name': last_name,
-        }
-    )
-
-    # Ensure username is unique if it clashed
-    if created and User.objects.filter(username=user.username).exclude(pk=user.pk).exists():
-        user.username = f"{user.username}_{user.pk}"
-        user.save()
-
-    login(request, user, backend='django.contrib.auth.backends.ModelBackend')
-    request.session.set_expiry(60 * 60 * 24 * 30)  # Google logins always remember
-
-    if created or not user.profile.organization:
-        # New user or no org yet — needs to enter join code
-        return redirect('accounts:google_complete')
-
-    return redirect('accounts:mentor_dashboard' if user.profile.role == 'mentor' else 'accounts:mentee_dashboard')
-
-
-@login_required
-def google_complete_view(request):
-    """Post-Google-OAuth step: enter org join code."""
-    if request.user.profile.organization:
-        return redirect('accounts:mentee_dashboard')
-
-    if request.method == 'POST':
-        join_code = request.POST.get('join_code', '').strip().upper()
-        phone_number = request.POST.get('phone_number', '').strip()
-
-        try:
-            organization = Organization.objects.get(join_code=join_code, is_active=True)
-        except Organization.DoesNotExist:
-            messages.error(request, 'Invalid join code. Please check with your organization admin.')
-            return render(request, 'accounts/google_complete.html')
-
-        request.user.profile.organization = organization
-        request.user.profile.role = 'mentee'
-        if phone_number:
-            request.user.profile.phone_number = phone_number
-        request.user.profile.save()
-
-        # Auto-assign to mentor with fewest mentees
-        available_mentors = organization.get_mentors()
-        if available_mentors.exists():
-            assigned_mentor = min(available_mentors, key=lambda m: m.get_mentees().count())
-            MentorAssignment.objects.create(
-                mentee=request.user.profile,
-                mentor=assigned_mentor,
-                notes='Auto-assigned on Google registration'
-            )
-
-        messages.success(request, f'Welcome to {organization.name}!')
-        return redirect('accounts:mentee_dashboard')
-
-    return render(request, 'accounts/google_complete.html')
-
 
 def login_view(request):
     if request.user.is_authenticated:
@@ -511,6 +382,96 @@ def mentor_assign_view(request, mentee_id):
         'organization': org
     }
     return render(request, 'accounts/mentor_assign.html', context)
+
+
+# ==================== Mentee Management Views ====================
+
+@login_required
+def mentee_list_view(request):
+    """Mentor sees all their assigned mentees."""
+    if request.user.profile.role != 'mentor':
+        return redirect('accounts:profile')
+
+    mentees = request.user.profile.get_mentees().select_related('user')
+    return render(request, 'accounts/mentee_list.html', {'mentees': mentees})
+
+
+@login_required
+def mentee_detail_view(request, mentee_id):
+    """Mentor views a specific mentee's profile and activity."""
+    if request.user.profile.role != 'mentor':
+        return redirect('accounts:profile')
+
+    mentee_profile = get_object_or_404(
+        UserProfile, id=mentee_id, role='mentee',
+        mentee_assignments__mentor=request.user.profile,
+        mentee_assignments__is_active=True
+    )
+
+    recent_tasks = TaskAssignment.objects.filter(mentee=mentee_profile.user).order_by('-created_at')[:5]
+    upcoming_meetings = Meeting.objects.filter(
+        mentee=mentee_profile.user, status='scheduled', start_time__gt=timezone.now()
+    ).order_by('start_time')[:5]
+
+    return render(request, 'accounts/mentee_detail.html', {
+        'mentee': mentee_profile,
+        'recent_tasks': recent_tasks,
+        'upcoming_meetings': upcoming_meetings,
+    })
+
+
+@login_required
+def mentee_edit_view(request, mentee_id):
+    """Mentor edits a mentee's basic profile info."""
+    if request.user.profile.role != 'mentor':
+        return redirect('accounts:profile')
+
+    mentee_profile = get_object_or_404(
+        UserProfile, id=mentee_id, role='mentee',
+        mentee_assignments__mentor=request.user.profile,
+        mentee_assignments__is_active=True
+    )
+
+    if request.method == 'POST':
+        first_name = request.POST.get('first_name', '').strip()
+        last_name = request.POST.get('last_name', '').strip()
+        phone_number = request.POST.get('phone_number', '').strip()
+        sms_enabled = request.POST.get('sms_notifications_enabled') == 'on'
+
+        mentee_profile.user.first_name = first_name
+        mentee_profile.user.last_name = last_name
+        mentee_profile.user.save()
+        mentee_profile.phone_number = phone_number
+        mentee_profile.sms_notifications_enabled = sms_enabled
+        mentee_profile.save()
+
+        messages.success(request, f'{mentee_profile.user.username}\'s profile updated.')
+        return redirect('accounts:mentee_detail', mentee_id=mentee_id)
+
+    return render(request, 'accounts/mentee_edit.html', {'mentee': mentee_profile})
+
+
+@login_required
+def mentee_remove_view(request, mentee_id):
+    """Mentor removes a mentee from the organization."""
+    if request.user.profile.role != 'mentor':
+        return redirect('accounts:profile')
+
+    mentee_profile = get_object_or_404(
+        UserProfile, id=mentee_id, role='mentee',
+        mentee_assignments__mentor=request.user.profile,
+        mentee_assignments__is_active=True
+    )
+
+    if request.method == 'POST':
+        username = mentee_profile.user.username
+        MentorAssignment.objects.filter(mentee=mentee_profile, is_active=True).update(is_active=False)
+        mentee_profile.organization = None
+        mentee_profile.save()
+        messages.success(request, f'{username} has been removed from the organization.')
+        return redirect('accounts:mentee_list')
+
+    return render(request, 'accounts/mentee_confirm_remove.html', {'mentee': mentee_profile})
 
 
 # ==================== Task Assignment Views ====================

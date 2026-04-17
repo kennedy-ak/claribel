@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% block title %}Edit {{ mentee.user.username }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'accounts:mentee_list' %}">My Mentees</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'accounts:mentee_detail' mentee.id %}">{{ mentee.user.username }}</a></li>
+        <li class="breadcrumb-item active">Edit</li>
+    </ol>
+</nav>
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h4 class="mb-0">Edit {{ mentee.user.get_full_name|default:mentee.user.username }}</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">First Name</label>
+                            <input type="text" name="first_name" class="form-control"
+                                   value="{{ mentee.user.first_name }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Last Name</label>
+                            <input type="text" name="last_name" class="form-control"
+                                   value="{{ mentee.user.last_name }}">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Phone Number</label>
+                        <input type="text" name="phone_number" class="form-control"
+                               value="{{ mentee.phone_number|default:'' }}"
+                               placeholder="02XXXXXXXXX or +233XXXXXXXXX">
+                    </div>
+                    <div class="mb-4 form-check">
+                        <input type="checkbox" class="form-check-input" name="sms_notifications_enabled"
+                               id="smsCheck" {% if mentee.sms_notifications_enabled %}checked{% endif %}>
+                        <label class="form-check-label" for="smsCheck">Enable SMS Notifications</label>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                        <a href="{% url 'accounts:mentee_detail' mentee.id %}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
