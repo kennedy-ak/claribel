@@ -17,6 +17,26 @@
     </div>
 </div>
 
+<!-- Quick Actions -->
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-plus-circle me-2"></i>Quick Actions</h5>
+                <div class="btn-group w-100" role="group">
+                    <a href="{% url 'accounts:task_create' %}" class="btn btn-light">
+                        <i class="bi bi-list-task me-1"></i>Assign Task
+                    </a>
+                    <a href="{% url 'accounts:meeting_create' %}" class="btn btn-light">
+                        <i class="bi bi-calendar-plus me-1"></i>Schedule Meeting
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics -->
 <div class="row mt-4">
     <div class="col-md-3">
         <div class="card text-center">
@@ -42,10 +62,18 @@
                         {% if mentee.bio %}
                             <p class="card-text"><small>{{ mentee.bio|truncatewords:15 }}</small></p>
                         {% endif %}
-                        <div class="btn-group btn-group-sm" role="group">
+                        <div class="btn-group btn-group-sm w-100" role="group">
                             <a href="{% url 'todo:mentor_todos' %}" class="btn btn-outline-primary">View Todos</a>
                             <a href="{% url 'reports:mentor_reports' %}" class="btn btn-outline-secondary">View Reports</a>
                             <a href="{% url 'notifications:send' mentee.user.username %}" class="btn btn-outline-info">Message</a>
+                        </div>
+                        <div class="btn-group btn-group-sm w-100 mt-2" role="group">
+                            <a href="{% url 'accounts:task_create' %}" class="btn btn-outline-success">
+                                <i class="bi bi-plus-circle me-1"></i>Assign Task
+                            </a>
+                            <a href="{% url 'accounts:meeting_create' %}" class="btn btn-outline-warning">
+                                <i class="bi bi-calendar-plus me-1"></i>Schedule Meeting
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -57,4 +85,85 @@
         <p>No mentees assigned to you yet. Mentees will be automatically assigned by the organization administrator.</p>
     </div>
 {% endif %}
+
+<!-- Recent Tasks -->
+<div class="mt-4">
+    <div class="d-flex justify-content-between align-items-center">
+        <h3><i class="bi bi-list-task me-2"></i>Recent Task Assignments</h3>
+        <a href="{% url 'accounts:task_list' %}" class="btn btn-sm btn-outline-primary">View All Tasks</a>
+    </div>
+    <div class="row mt-3">
+        {% for task in recent_tasks %}
+        <div class="col-md-6 mb-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <h6 class="card-title">{{ task.title }}</h6>
+                        <span class="badge
+                            {% if task.priority == 'high' %}bg-danger
+                            {% elif task.priority == 'medium' %}bg-warning
+                            {% else %}bg-success{% endif %}">
+                            {{ task.get_priority_display }}
+                        </span>
+                    </div>
+                    <p class="card-text small">
+                        <i class="bi bi-person me-1"></i>{{ task.mentee.username }}
+                        <span class="badge ms-2
+                            {% if task.status == 'completed' %}bg-success
+                            {% elif task.status == 'overdue' %}bg-danger
+                            {% elif task.status == 'in_progress' %}bg-info
+                            {% else %}bg-secondary{% endif %}">
+                            {{ task.get_status_display }}
+                        </span>
+                    </p>
+                    <p class="card-text small">
+                        <i class="bi bi-calendar me-1"></i>Due: {{ task.due_date }}
+                    </p>
+                    <a href="{% url 'accounts:task_detail' task.id %}" class="btn btn-sm btn-primary">View Details</a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info">
+                <i class="bi bi-inbox me-2"></i>No tasks assigned yet. Start by assigning tasks to your mentees.
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Upcoming Meetings -->
+<div class="mt-4">
+    <div class="d-flex justify-content-between align-items-center">
+        <h3><i class="bi bi-calendar-event me-2"></i>Upcoming Meetings</h3>
+        <a href="{% url 'accounts:meeting_list' %}" class="btn btn-sm btn-outline-primary">View All Meetings</a>
+    </div>
+    <div class="row mt-3">
+        {% for meeting in upcoming_meetings %}
+        <div class="col-md-6 mb-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title">{{ meeting.title }}</h6>
+                    <p class="card-text small">
+                        <i class="bi bi-person me-1"></i>{{ meeting.mentee.username }}
+                        <span class="badge bg-success ms-2">Scheduled</span>
+                    </p>
+                    <p class="card-text small">
+                        <i class="bi bi-calendar me-1"></i>{{ meeting.start_time|date:"F d, Y" }}
+                        <i class="bi bi-clock ms-2"></i>{{ meeting.start_time|date:"g:i A" }}
+                    </p>
+                    <a href="{% url 'accounts:meeting_detail' meeting.id %}" class="btn btn-sm btn-primary">View Details</a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info">
+                <i class="bi bi-inbox me-2"></i>No upcoming meetings scheduled. Schedule a meeting with your mentees.
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
 {% endblock %}

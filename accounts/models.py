@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils import timezone
 import random
 import string
 
@@ -103,3 +104,77 @@ class MentorAssignment(models.Model):
             ).exclude(pk=self.pk).update(is_active=False)
 
         super().save(*args, **kwargs)
+
+
+class TaskAssignment(models.Model):
+    """Tasks assigned by mentors to individual mentees with deadlines."""
+    PRIORITY_CHOICES = [('low', 'Low'), ('medium', 'Medium'), ('high', 'High')]
+    STATUS_CHOICES = [('pending', 'Pending'), ('in_progress', 'In Progress'), ('completed', 'Completed'), ('overdue', 'Overdue')]
+
+    mentee = models.ForeignKey(User, on_delete=models.CASCADE, related_name='task_assignments')
+    mentor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='assigned_tasks')
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='medium')
+    status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='pending')
+    due_date = models.DateField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    notes = models.TextField(blank=True, help_text="Mentor notes or progress updates")
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "Task Assignment"
+        verbose_name_plural = "Task Assignments"
+
+    def __str__(self):
+        return f"{self.title} - {self.mentee.username}"
+
+    def save(self, *args, **kwargs):
+        # Set completion time when status changes to completed
+        if self.status == 'completed' and not self.completed_at:
+            self.completed_at = timezone.now()
+        elif self.status != 'completed' and self.completed_at:
+            self.completed_at = None
+
+        # Check if task is overdue
+        if self.status != 'completed' and self.due_date < timezone.now().date():
+            self.status = 'overdue'
+
+        super().save(*args, **kwargs)
+
+
+class Meeting(models.Model):
+    """Google Meet meetings scheduled by mentors for individual mentees."""
+    STATUS_CHOICES = [('scheduled', 'Scheduled'), ('completed', 'Completed'), ('cancelled', 'Cancelled')]
+
+    mentor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='mentored_meetings')
+    mentee = models.ForeignKey(User, on_delete=models.CASCADE, related_name='personal_meetings')
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    start_time = models.DateTimeField()
+    end_time = models.DateTimeField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='scheduled')
+    google_meet_url = models.URLField(blank=True, help_text="Google Meet URL for joining")
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['start_time']
+        verbose_name = "Meeting"
+        verbose_name_plural = "Meetings"
+
+    def __str__(self):
+        return f"{self.title} - {self.mentee.username} ({self.start_time.strftime('%Y-%m-%d %H:%M')})"
+
+    def is_upcoming(self):
+        """Check if meeting is upcoming and not cancelled/completed."""
+        now = timezone.now()
+        return self.status == 'scheduled' and self.start_time > now
+
+    def is_joinable(self):
+        """Check if meeting can be joined (within 15 minutes of start time)."""
+        now = timezone.now()
+        join_window = timezone.timedelta(minutes=15)
+        return self.status == 'scheduled' and self.start_time - join_window <= now <= self.end_time

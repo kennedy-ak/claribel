@@ -177,7 +177,12 @@ EMAIL_HOST_USER = 'your-email@gmail.com'
 EMAIL_HOST_PASSWORD = 'your-app-password'
 DEFAULT_FROM_EMAIL = 'MentorFlow <noreply@mentorflow.com>'
 
-# Twilio Configuration (SMS)
+# mNotify Configuration (SMS Provider for Ghana)
+# Get your API key from: https://apps.mnotify.net/api/api
+MNOTIFY_API_KEY = config('MNOTIFY_API_KEY', default='')
+MNOTIFY_SENDER_ID = config('MNOTIFY_SENDER_ID', default='MentorFlow')  # Max 11 characters
+
+# Legacy Twilio Configuration (SMS) - Kept for reference, not actively used
 TWILIO_ACCOUNT_SID = 'your_account_sid'
 TWILIO_AUTH_TOKEN = 'your_auth_token'
 TWILIO_PHONE_NUMBER = '+1234567890'

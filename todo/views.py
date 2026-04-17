@@ -48,6 +48,7 @@ def todo_create_view(request):
         # Notify mentor if assigned
         current_mentor = request.user.profile.get_current_mentor()
         if current_mentor:
+            # Send email notification
             NotificationService.send_notification(
                 recipient=current_mentor.user,
                 trigger_event='todo_submitted',
@@ -56,6 +57,16 @@ def todo_create_view(request):
                        f'Please review it on the mentor dashboard.',
                 notification_type='email'
             )
+
+            # Send SMS notification if mentor has SMS enabled
+            if current_mentor.sms_notifications_enabled and current_mentor.phone_number:
+                NotificationService.send_notification(
+                    recipient=current_mentor.user,
+                    trigger_event='todo_submitted',
+                    subject='Todo List Submitted',
+                    message=f'{request.user.username} submitted a todo list. Check your dashboard.',
+                    notification_type='sms'
+                )
 
         return redirect('todo:today')
 

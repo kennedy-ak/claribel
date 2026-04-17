@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from django.contrib import messages
 from django.db.models import Q, F
 from .models import Conversation, Message
+from .services import NotificationService
 
 
 @login_required
@@ -64,6 +65,17 @@ def conversation_detail_view(request, conversation_id):
                 content=content
             )
             messages.success(request, 'Message sent!')
+
+            # Send SMS notification to recipient if enabled
+            if other_user.profile.sms_notifications_enabled and other_user.profile.phone_number:
+                NotificationService.send_notification(
+                    recipient=other_user,
+                    trigger_event='message_received',
+                    subject=f'New Message from {request.user.username}',
+                    message=f'You have a new message from {request.user.username}. Check your inbox.',
+                    notification_type='sms'
+                )
+
             return redirect('notifications:conversation_detail', conversation_id=conversation_id)
         else:
             messages.error(request, 'Please enter a message.')
@@ -129,6 +141,17 @@ def conversation_start_view(request, username):
                     content=content
                 )
                 messages.success(request, f'Conversation started with {other_user.username}!')
+
+                # Send SMS notification to recipient if enabled
+                if other_user.profile.sms_notifications_enabled and other_user.profile.phone_number:
+                    NotificationService.send_notification(
+                        recipient=other_user,
+                        trigger_event='message_received',
+                        subject=f'New Message from {request.user.username}',
+                        message=f'You have a new message from {request.user.username}. Check your inbox.',
+                        notification_type='sms'
+                    )
+
                 return redirect('notifications:conversation_detail', conversation_id=conversation.id)
             else:
                 messages.error(request, 'Please enter a message.')
