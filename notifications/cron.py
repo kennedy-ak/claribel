@@ -11,6 +11,7 @@ def send_morning_reminders():
 
     for profile in mentee_profiles:
         if profile.user.email:
+            # Send email notification
             NotificationService.send_notification(
                 recipient=profile.user,
                 trigger_event='morning_reminder',
@@ -26,6 +27,16 @@ Mentorship Platform Team''',
                 notification_type='email'
             )
 
+        # Send SMS notification if enabled
+        if profile.sms_notifications_enabled and profile.phone_number:
+            NotificationService.send_notification(
+                recipient=profile.user,
+                trigger_event='morning_reminder',
+                subject='Todo Reminder',
+                message='Morning! Time to create your todo list. Login to your dashboard.',
+                notification_type='sms'
+            )
+
 
 def send_evening_reminders():
     """
@@ -36,6 +47,7 @@ def send_evening_reminders():
 
     for profile in mentee_profiles:
         if profile.user.email:
+            # Send email notification
             NotificationService.send_notification(
                 recipient=profile.user,
                 trigger_event='evening_reminder',
@@ -53,4 +65,14 @@ Please log in to the mentorship platform and share:
 Best regards,
 Mentorship Platform Team''',
                 notification_type='email'
+            )
+
+        # Send SMS notification if enabled
+        if profile.sms_notifications_enabled and profile.phone_number:
+            NotificationService.send_notification(
+                recipient=profile.user,
+                trigger_event='evening_reminder',
+                subject='Daily Report',
+                message='Evening! Time to submit your daily report. Login to your dashboard.',
+                notification_type='sms'
             )

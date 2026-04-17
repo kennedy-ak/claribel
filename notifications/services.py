@@ -1,12 +1,7 @@
 from django.core.mail import send_mail
 from django.conf import settings
 from .models import Notification
-
-try:
-    from twilio.rest import Client
-    TWILIO_AVAILABLE = True
-except ImportError:
-    TWILIO_AVAILABLE = False
+from .sms_providers import MNotifySMSProvider
 
 
 class NotificationService:
@@ -39,25 +34,26 @@ class NotificationService:
                     recipient_list=[recipient.email],
                     fail_silently=False
                 )
+                notification.sent_successfully = True
             elif notification_type == 'sms':
-                if not TWILIO_AVAILABLE:
-                    notification.error_message = "Twilio is not installed"
-                    notification.save()
-                    return notification
-
-                if recipient.profile.phone_number and recipient.profile.sms_notifications_enabled:
-                    client = Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
-                    client.messages.create(
-                        body=message,
-                        from_=settings.TWILIO_PHONE_NUMBER,
-                        to=recipient.profile.phone_number
-                    )
-                else:
+                # Check if user has SMS enabled and phone number
+                if not (recipient.profile.phone_number and recipient.profile.sms_notifications_enabled):
                     notification.error_message = "SMS not enabled or no phone number provided"
                     notification.save()
                     return notification
 
-            notification.sent_successfully = True
+                # Send SMS using mNotify
+                sms_provider = MNotifySMSProvider()
+                result = sms_provider.send_sms(
+                    recipient_phone=str(recipient.profile.phone_number),
+                    message=message
+                )
+
+                if result['success']:
+                    notification.sent_successfully = True
+                else:
+                    notification.error_message = result['message']
+
             notification.save()
         except Exception as e:
             notification.error_message = str(e)

@@ -55,7 +55,7 @@ class Conversation(models.Model):
 
     def get_unread_count(self, user):
         """Get count of unread messages for a user."""
-        return self.messages.filter(is_read=False, sender__ne=user).count()
+        return self.messages.filter(is_read=False).exclude(sender=user).count()
 
 
 class Message(models.Model):

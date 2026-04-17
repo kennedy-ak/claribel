@@ -14,8 +14,9 @@
     </div>
 </div>
 
+<!-- Daily Actions -->
 <div class="row mt-4">
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card text-center">
             <div class="card-body">
                 <h5 class="card-title">Today's Tasks</h5>
@@ -24,7 +25,7 @@
             </div>
         </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card text-center">
             <div class="card-body">
                 <h5 class="card-title">Evening Report</h5>
@@ -33,12 +34,21 @@
             </div>
         </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card text-center">
             <div class="card-body">
                 <h5 class="card-title">Messages</h5>
                 <p class="card-text">Communicate with your mentor</p>
                 <a href="{% url 'notifications:inbox' %}" class="btn btn-info">Inbox</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">My Tasks</h5>
+                <p class="card-text">View assigned tasks</p>
+                <a href="{% url 'accounts:task_list' %}" class="btn btn-warning">View Tasks</a>
             </div>
         </div>
     </div>
@@ -66,6 +76,94 @@
             </div>
         </div>
     </div>
+
+    <!-- My Assigned Tasks -->
+    <div class="mt-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <h3><i class="bi bi-list-task me-2"></i>My Assigned Tasks</h3>
+            <a href="{% url 'accounts:task_list' %}" class="btn btn-sm btn-outline-primary">View All Tasks</a>
+        </div>
+        <div class="row mt-3">
+            {% for task in my_tasks %}
+            <div class="col-md-6 mb-3">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <h6 class="card-title">{{ task.title }}</h6>
+                            <span class="badge
+                                {% if task.priority == 'high' %}bg-danger
+                                {% elif task.priority == 'medium' %}bg-warning
+                                {% else %}bg-success{% endif %}">
+                                {{ task.get_priority_display }}
+                            </span>
+                        </div>
+                        <p class="card-text small">
+                            <i class="bi bi-person me-1"></i>From: {{ task.mentor.username }}
+                            <span class="badge ms-2
+                                {% if task.status == 'completed' %}bg-success
+                                {% elif task.status == 'overdue' %}bg-danger
+                                {% elif task.status == 'in_progress' %}bg-info
+                                {% else %}bg-secondary{% endif %}">
+                                {{ task.get_status_display }}
+                            </span>
+                        </p>
+                        <p class="card-text small">
+                            <i class="bi bi-calendar me-1"></i>Due: {{ task.due_date }}
+                            {% if task.is_overdue %}<span class="badge bg-danger ms-2">Overdue</span>{% endif %}
+                        </p>
+                        <a href="{% url 'accounts:task_detail' task.id %}" class="btn btn-sm btn-primary">View Details</a>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12">
+                <div class="alert alert-info">
+                    <i class="bi bi-inbox me-2"></i>No tasks assigned to you yet. Your mentor will assign tasks here.
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Upcoming Meetings -->
+    <div class="mt-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <h3><i class="bi bi-calendar-event me-2"></i>Upcoming Meetings</h3>
+            <a href="{% url 'accounts:meeting_list' %}" class="btn btn-sm btn-outline-primary">View All Meetings</a>
+        </div>
+        <div class="row mt-3">
+            {% for meeting in my_meetings %}
+            <div class="col-md-6 mb-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h6 class="card-title">{{ meeting.title }}</h6>
+                        <p class="card-text small">
+                            <i class="bi bi-person me-1"></i>With: {{ meeting.mentor.username }}
+                            <span class="badge bg-success ms-2">Scheduled</span>
+                        </p>
+                        <p class="card-text small">
+                            <i class="bi bi-calendar me-1"></i>{{ meeting.start_time|date:"F d, Y" }}
+                            <i class="bi bi-clock ms-2"></i>{{ meeting.start_time|date:"g:i A" }}
+                        </p>
+                        {% if meeting.is_joinable %}
+                        <a href="{{ meeting.google_meet_url }}" target="_blank" class="btn btn-sm btn-success me-2">
+                            <i class="bi bi-camera-video me-1"></i>Join Meeting
+                        </a>
+                        {% endif %}
+                        <a href="{% url 'accounts:meeting_detail' meeting.id %}" class="btn btn-sm btn-primary">View Details</a>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12">
+                <div class="alert alert-info">
+                    <i class="bi bi-inbox me-2"></i>No upcoming meetings scheduled. Your mentor will schedule meetings here.
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
 {% elif organization %}
     <div class="alert alert-warning mt-4">
         <h5>No mentor assigned yet!</h5>

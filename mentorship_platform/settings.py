@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'corsheaders',
+    'channels',  # For WebSocket support
     'accounts.apps.AccountsConfig',
     'todo.apps.TodoConfig',
     'reports.apps.ReportsConfig',
@@ -95,12 +96,17 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'notifications.context_processors.unread_message_count',
             ],
         },
     },
 ]
 
 WSGI_APPLICATION = 'mentorship_platform.wsgi.application'
+# Feature Flags
+ALLOW_MENTOR_REGISTRATION = config('ALLOW_MENTOR_REGISTRATION', default=False, cast=bool)
+
+ASGI_APPLICATION = 'mentorship_platform.asgi.application'
 
 
 # Database
@@ -177,7 +183,12 @@ EMAIL_HOST_USER = 'your-email@gmail.com'
 EMAIL_HOST_PASSWORD = 'your-app-password'
 DEFAULT_FROM_EMAIL = 'MentorFlow <noreply@mentorflow.com>'
 
-# Twilio Configuration (SMS)
+# mNotify Configuration (SMS Provider for Ghana)
+# Get your API key from: https://apps.mnotify.net/api/api
+MNOTIFY_API_KEY = config('MNOTIFY_API_KEY', default='')
+MNOTIFY_SENDER_ID = config('MNOTIFY_SENDER_ID', default='MentorFlow')  # Max 11 characters
+
+# Legacy Twilio Configuration (SMS) - Kept for reference, not actively used
 TWILIO_ACCOUNT_SID = 'your_account_sid'
 TWILIO_AUTH_TOKEN = 'your_auth_token'
 TWILIO_PHONE_NUMBER = '+1234567890'
@@ -187,6 +198,26 @@ CRONJOBS = [
     ('0 8 * * *', 'notifications.cron.send_morning_reminders'),
     ('0 18 * * *', 'notifications.cron.send_evening_reminders'),
 ]
+
+# Channel Layers for WebSocket support
+if DEBUG:
+    # Use in-memory channel layer for development (no Redis required)
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        },
+    }
+else:
+    # Use Redis for production
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels_redis.core.RedisChannelLayer',
+            'CONFIG': {
+                "hosts": [(config('REDIS_HOST', default='127.0.0.1'), config('REDIS_PORT', default=6379, cast=int))],
+                "db": config('REDIS_DB', default=0, cast=int),
+            },
+        },
+    }
 
 # Admin Site Branding
 ADMIN_SITE_TITLE = "MentorFlow Administration"

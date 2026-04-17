@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Meetings - MentorFlow{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-calendar-event me-2"></i>My Meetings</h2>
+                {% if is_mentor %}
+                <a href="{% url 'accounts:meeting_create' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-2"></i>Schedule Meeting
+                </a>
+                {% endif %}
+            </div>
+
+            <!-- Filter Buttons -->
+            <div class="mb-3">
+                <div class="btn-group" role="group">
+                    <a href="{% url 'accounts:meeting_list' %}" class="btn {% if not status_filter %}btn-primary{% else %}btn-outline-primary{% endif %}">All</a>
+                    <a href="{% url 'accounts:meeting_list' %}?status=scheduled" class="btn {% if status_filter == 'scheduled' %}btn-primary{% else %}btn-outline-primary{% endif %}">Scheduled</a>
+                    <a href="{% url 'accounts:meeting_list' %}?status=completed" class="btn {% if status_filter == 'completed' %}btn-primary{% else %}btn-outline-primary{% endif %}">Completed</a>
+                    <a href="{% url 'accounts:meeting_list' %}?status=cancelled" class="btn {% if status_filter == 'cancelled' %}btn-primary{% else %}btn-outline-primary{% endif %}">Cancelled</a>
+                </div>
+            </div>
+
+            <!-- Upcoming Meetings -->
+            {% if upcoming_meetings %}
+            <div class="mb-4">
+                <h4 class="mb-3"><i class="bi bi-calendar-check me-2"></i>Upcoming Meetings</h4>
+                <div class="row">
+                    {% for meeting in upcoming_meetings %}
+                    <div class="col-md-6 mb-3">
+                        <div class="card h-100">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">{{ meeting.title }}</h6>
+                                <span class="badge bg-success">Scheduled</span>
+                            </div>
+                            <div class="card-body">
+                                <p class="card-text small text-muted">
+                                    <i class="bi bi-person me-1"></i>
+                                    {% if is_mentor %}With: {{ meeting.mentee.username }}{% else %}With: {{ meeting.mentor.username }}{% endif %}
+                                </p>
+                                <p class="card-text">
+                                    <i class="bi bi-calendar me-2"></i>{{ meeting.start_time|date:"F d, Y" }}
+                                    <br>
+                                    <i class="bi bi-clock me-2"></i>{{ meeting.start_time|date:"g:i A" }} - {{ meeting.end_time|date:"g:i A" }}
+                                </p>
+                                {% if meeting.description %}
+                                <p class="card-text small">{{ meeting.description|truncatewords:15 }}</p>
+                                {% endif %}
+                            </div>
+                            <div class="card-footer">
+                                <a href="{% url 'accounts:meeting_detail' meeting.id %}" class="btn btn-sm btn-primary w-100">
+                                    <i class="bi bi-eye me-1"></i>View Details
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Past Meetings -->
+            {% if past_meetings %}
+            <div class="mb-4">
+                <h4 class="mb-3"><i class="bi bi-clock-history me-2"></i>Past Meetings</h4>
+                <div class="row">
+                    {% for meeting in past_meetings %}
+                    <div class="col-md-6 mb-3">
+                        <div class="card h-100">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">{{ meeting.title }}</h6>
+                                <span class="badge
+                                    {% if meeting.status == 'completed' %}bg-secondary
+                                    {% elif meeting.status == 'cancelled' %}bg-danger
+                                    {% else %}bg-success{% endif %}">
+                                    {{ meeting.get_status_display }}
+                                </span>
+                            </div>
+                            <div class="card-body">
+                                <p class="card-text small text-muted">
+                                    <i class="bi bi-person me-1"></i>
+                                    {% if is_mentor %}With: {{ meeting.mentee.username }}{% else %}With: {{ meeting.mentor.username }}{% endif %}
+                                </p>
+                                <p class="card-text">
+                                    <i class="bi bi-calendar me-2"></i>{{ meeting.start_time|date:"F d, Y" }}
+                                    <br>
+                                    <i class="bi bi-clock me-2"></i>{{ meeting.start_time|date:"g:i A" }} - {{ meeting.end_time|date:"g:i A" }}
+                                </p>
+                            </div>
+                            <div class="card-footer">
+                                <a href="{% url 'accounts:meeting_detail' meeting.id %}" class="btn btn-sm btn-outline-primary w-100">
+                                    <i class="bi bi-eye me-1"></i>View Details
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- No Meetings Message -->
+            {% if not upcoming_meetings and not past_meetings %}
+            <div class="alert alert-info text-center">
+                <i class="bi bi-inbox me-2"></i>No meetings found. {% if is_mentor %}Schedule a meeting with your mentee.{% else %}Your mentor hasn't scheduled any meetings yet.{% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
