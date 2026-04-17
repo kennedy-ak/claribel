@@ -3,10 +3,13 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib import messages
+from django.conf import settings
 from django.utils import timezone
 from .models import UserProfile, Organization, MentorAssignment, TaskAssignment, Meeting
 from .forms import RegistrationForm, OrganizationForm, MentorAssignmentForm, ProfileUpdateForm, TaskAssignmentForm, TaskUpdateForm, MeetingForm
 from notifications.services import NotificationService
+
+ALLOW_MENTOR_REGISTRATION = getattr(settings, 'ALLOW_MENTOR_REGISTRATION', True)
 
 
 def register_view(request):
@@ -15,7 +18,7 @@ def register_view(request):
         form = RegistrationForm(request.POST)
         if form.is_valid():
             # Get form data
-            role = form.cleaned_data['role']
+            role = 'mentee' if not ALLOW_MENTOR_REGISTRATION else form.cleaned_data['role']
             phone_number = form.cleaned_data.get('phone_number', '').strip()
             sms_notifications_enabled = form.cleaned_data.get('sms_notifications_enabled', False)
             join_code = form.cleaned_data.get('join_code', '').strip().upper()
@@ -85,7 +88,10 @@ def register_view(request):
     else:
         form = RegistrationForm()
 
-    return render(request, 'accounts/register.html', {'form': form})
+    return render(request, 'accounts/register.html', {
+        'form': form,
+        'allow_mentor_registration': ALLOW_MENTOR_REGISTRATION,
+    })
 
 
 @login_required

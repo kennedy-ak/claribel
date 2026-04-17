@@ -58,6 +58,7 @@
 
                     <hr>
 
+                    {% if allow_mentor_registration %}
                     <!-- Role Selection -->
                     <h5 class="mb-3">I want to join as:</h5>
                     <div class="mb-3 p-3 bg-light rounded">
@@ -77,11 +78,12 @@
                             </div>
                         {% endfor %}
                     </div>
+                    {% endif %}
 
-                    <!-- Organization Code (for Mentees) -->
-                    <div id="orgCodeSection" class="mb-3" style="display: none;">
+                    <!-- Organization Code -->
+                    <div id="orgCodeSection" class="mb-3"{% if allow_mentor_registration %} style="display: none;"{% endif %}>
                         <label for="{{ form.join_code.id_for_label }}" class="form-label">
-                            Organization Join Code *
+                            Organization Join Code
                         </label>
                         {{ form.join_code }}
                         <small class="form-text text-muted">
@@ -89,6 +91,7 @@
                         </small>
                     </div>
 
+                    {% if allow_mentor_registration %}
                     <!-- Organization Creation (for Mentors) -->
                     <div id="orgCreateSection" class="mb-3" style="display: none;">
                         <div class="mb-3">
@@ -110,6 +113,7 @@
                             </small>
                         </div>
                     </div>
+                    {% endif %}
 
                     {% if form.errors %}
                         <div class="alert alert-danger">
@@ -133,6 +137,7 @@
     </div>
 </div>
 
+{% if allow_mentor_registration %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const roleInputs = document.querySelectorAll('input[name="role"]');
@@ -144,17 +149,13 @@ document.addEventListener('DOMContentLoaded', function() {
     roleInputs.forEach(input => {
         input.addEventListener('change', function() {
             if (this.value === 'mentee') {
-                // Show join code section for mentees
                 orgCodeSection.style.display = 'block';
                 joinCodeInput.required = true;
-                // Hide organization creation section
                 orgCreateSection.style.display = 'none';
                 orgNameInput.required = false;
             } else if (this.value === 'mentor') {
-                // Show organization creation section for mentors
                 orgCreateSection.style.display = 'block';
                 orgNameInput.required = true;
-                // Hide join code section
                 orgCodeSection.style.display = 'none';
                 joinCodeInput.required = false;
             }
@@ -162,4 +163,5 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
+{% endif %}
 {% endblock %}

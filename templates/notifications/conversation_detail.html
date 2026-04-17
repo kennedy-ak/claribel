@@ -31,10 +31,10 @@
             </div>
             <div class="card-body">
                 <!-- Messages -->
-                <div class="messages-container" style="max-height: 500px; overflow-y: auto; padding: 15px; background: #f8f9fa; border-radius: 8px; margin-bottom: 15px;">
+                <div id="messages-container" class="messages-container" style="max-height: 500px; overflow-y: auto; padding: 15px; background: #f8f9fa; border-radius: 8px; margin-bottom: 15px;">
                     {% if messages %}
                         {% for message in messages %}
-                            <div class="message mb-3 {% if message.sender == user %}text-end{% else %}text-start{% endif %}">
+                            <div class="message mb-3 {% if message.sender == user %}text-end{% else %}text-start{% endif %}" data-message-id="{{ message.id }}">
                                 <div class="d-inline-block {% if message.sender == user %}bg-primary text-white{% else %}bg-white border{% endif %}"
                                      style="max-width: 70%; padding: 10px 15px; border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
                                     {% if message.sender == user %}
@@ -55,18 +55,29 @@
                 </div>
 
                 <!-- Reply Form -->
-                <form method="post" class="mt-3">
+                <form id="message-form" class="mt-3">
                     {% csrf_token %}
                     <div class="input-group">
                         <input type="text"
-                               name="content"
+                               id="message-input"
                                class="form-control"
                                placeholder="Type your message..."
                                autocomplete="off"
                                required>
-                        <button type="submit" class="btn btn-primary">Send</button>
+                        <button type="submit" class="btn btn-primary">
+                            <span id="send-button-text">Send</span>
+                            <span id="sending-indicator" style="display: none;">
+                                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                Sending...
+                            </span>
+                        </button>
                     </div>
                 </form>
+
+                <!-- Connection Status -->
+                <div id="connection-status" class="mt-2 small text-muted">
+                    <i class="bi bi-wifi"></i> Connecting to real-time messaging...
+                </div>
             </div>
         </div>
 
@@ -89,5 +100,205 @@ main .alert {
 .message {
     clear: both;
 }
+
+#connection-status.connected {
+    color: #059669;
+}
+
+#connection-status.disconnected {
+    color: #DC2626;
+}
+
+#connection-status.connecting {
+    color: #D97706;
+}
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const conversationId = {{ conversation.id }};
+    const currentUsername = '{{ user.username }}';
+    const otherUsername = '{{ other_user.username }}';
+    let websocket;
+    let reconnectAttempts = 0;
+    const maxReconnectAttempts = 5;
+
+    function connectWebSocket() {
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${wsProtocol}//${window.location.host}/ws/conversations/${conversationId}/`;
+
+        updateConnectionStatus('connecting', 'Connecting to real-time messaging...');
+
+        websocket = new WebSocket(wsUrl);
+
+        websocket.onopen = function(e) {
+            console.log('WebSocket connection established');
+            updateConnectionStatus('connected', '✓ Connected to real-time messaging');
+            reconnectAttempts = 0;
+        };
+
+        websocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            const message = data.message;
+
+            // Only add message if it doesn't already exist
+            if (!document.querySelector(`[data-message-id="${message.id}"]`)) {
+                addMessageToChat(message);
+                scrollToBottom();
+            }
+        };
+
+        websocket.onclose = function(e) {
+            console.log('WebSocket connection closed');
+            updateConnectionStatus('disconnected', '✗ Disconnected from real-time messaging');
+
+            // Attempt to reconnect
+            if (reconnectAttempts < maxReconnectAttempts) {
+                reconnectAttempts++;
+                const timeout = Math.min(1000 * Math.pow(2, reconnectAttempts), 10000);
+                console.log(`Reconnecting in ${timeout}ms... (attempt ${reconnectAttempts}/${maxReconnectAttempts})`);
+
+                setTimeout(function() {
+                    connectWebSocket();
+                }, timeout);
+            } else {
+                updateConnectionStatus('disconnected', '✗ Connection failed. Refresh to try again.');
+            }
+        };
+
+        websocket.onerror = function(e) {
+            console.error('WebSocket error:', e);
+            updateConnectionStatus('disconnected', '✗ Connection error');
+        };
+    }
+
+    function updateConnectionStatus(status, message) {
+        const statusElement = document.getElementById('connection-status');
+        statusElement.className = `mt-2 small ${status}`;
+        statusElement.innerHTML = `<i class="bi bi-wifi"></i> ${message}`;
+    }
+
+    function addMessageToChat(message) {
+        const messagesContainer = document.getElementById('messages-container');
+        const isCurrentUser = message.sender === currentUsername;
+
+        const messageHtml = `
+            <div class="message mb-3 ${isCurrentUser ? 'text-end' : 'text-start'}" data-message-id="${message.id}">
+                <div class="d-inline-block ${isCurrentUser ? 'bg-primary text-white' : 'bg-white border'}"
+                     style="max-width: 70%; padding: 10px 15px; border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
+                    <small class="${isCurrentUser ? 'opacity-75' : 'text-muted'}">
+                        ${isCurrentUser ? 'You' : message.sender_first_name || otherUsername}
+                    </small>
+                    <div class="mt-1" style="white-space: pre-wrap;">${escapeHtml(message.content)}</div>
+                    <small class="${isCurrentUser ? 'text-white-50' : 'text-muted'}">
+                        ${formatTime(message.timestamp)}
+                    </small>
+                </div>
+            </div>
+        `;
+
+        messagesContainer.insertAdjacentHTML('beforeend', messageHtml);
+
+        // Remove "No messages yet" message if it exists
+        const noMessagesMsg = messagesContainer.querySelector('.text-muted.text-center');
+        if (noMessagesMsg && noMessagesMsg.textContent.includes('No messages yet')) {
+            noMessagesMsg.remove();
+        }
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function formatTime(timestamp) {
+        const date = new Date(timestamp);
+        return date.toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+        });
+    }
+
+    function scrollToBottom() {
+        const messagesContainer = document.getElementById('messages-container');
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    function sendMessage(content) {
+        if (websocket && websocket.readyState === WebSocket.OPEN) {
+            websocket.send(JSON.stringify({
+                'message': content
+            }));
+            return true;
+        } else {
+            // Fallback to traditional form submission
+            console.log('WebSocket not available, using fallback');
+            return false;
+        }
+    }
+
+    // Handle form submission
+    const messageForm = document.getElementById('message-form');
+    const messageInput = document.getElementById('message-input');
+
+    messageForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const content = messageInput.value.trim();
+        if (!content) return;
+
+        // Try WebSocket first
+        if (sendMessage(content)) {
+            messageInput.value = '';
+
+            // Show optimistic update
+            const tempMessageHtml = `
+                <div class="message mb-3 text-end" data-message-id="temp-${Date.now()}">
+                    <div class="d-inline-block bg-primary text-white"
+                         style="max-width: 70%; padding: 10px 15px; border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
+                        <small class="opacity-75">You</small>
+                        <div class="mt-1" style="white-space: pre-wrap;">${escapeHtml(content)}</div>
+                        <small class="text-white-50">Sending...</small>
+                    </div>
+                </div>
+            `;
+
+            const messagesContainer = document.getElementById('messages-container');
+            messagesContainer.insertAdjacentHTML('beforeend', tempMessageHtml);
+            scrollToBottom();
+
+            // Remove "No messages yet" message if it exists
+            const noMessagesMsg = messagesContainer.querySelector('.text-muted.text-center');
+            if (noMessagesMsg && noMessagesMsg.textContent.includes('No messages yet')) {
+                noMessagesMsg.remove();
+            }
+        } else {
+            // Fallback: traditional form submission
+            const formData = new FormData();
+            formData.append('content', content);
+            formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+            fetch(window.location.href, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            }).then(response => {
+                if (response.ok) {
+                    window.location.reload();
+                }
+            });
+        }
+    });
+
+    // Scroll to bottom on page load
+    scrollToBottom();
+
+    // Connect WebSocket
+    connectWebSocket();
+});
+</script>
 {% endblock %}

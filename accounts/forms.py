@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
+from django.conf import settings
 from .models import UserProfile, Organization, MentorAssignment, TaskAssignment, Meeting
 
 
@@ -84,6 +85,11 @@ class RegistrationForm(UserCreationForm):
         self.fields['username'].widget.attrs.update({'class': 'form-control'})
         self.fields['password1'].widget.attrs.update({'class': 'form-control'})
         self.fields['password2'].widget.attrs.update({'class': 'form-control'})
+
+        if not getattr(settings, 'ALLOW_MENTOR_REGISTRATION', True):
+            del self.fields['role']
+            del self.fields['org_name']
+            del self.fields['org_description']
 
 
 class OrganizationForm(forms.ModelForm):

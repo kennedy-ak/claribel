@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'corsheaders',
+    'channels',  # For WebSocket support
     'accounts.apps.AccountsConfig',
     'todo.apps.TodoConfig',
     'reports.apps.ReportsConfig',
@@ -101,6 +102,10 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'mentorship_platform.wsgi.application'
+# Feature Flags
+ALLOW_MENTOR_REGISTRATION = config('ALLOW_MENTOR_REGISTRATION', default=False, cast=bool)
+
+ASGI_APPLICATION = 'mentorship_platform.asgi.application'
 
 
 # Database
@@ -192,6 +197,26 @@ CRONJOBS = [
     ('0 8 * * *', 'notifications.cron.send_morning_reminders'),
     ('0 18 * * *', 'notifications.cron.send_evening_reminders'),
 ]
+
+# Channel Layers for WebSocket support
+if DEBUG:
+    # Use in-memory channel layer for development (no Redis required)
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        },
+    }
+else:
+    # Use Redis for production
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels_redis.core.RedisChannelLayer',
+            'CONFIG': {
+                "hosts": [(config('REDIS_HOST', default='127.0.0.1'), config('REDIS_PORT', default=6379, cast=int))],
+                "db": config('REDIS_DB', default=0, cast=int),
+            },
+        },
+    }
 
 # Admin Site Branding
 ADMIN_SITE_TITLE = "MentorFlow Administration"
