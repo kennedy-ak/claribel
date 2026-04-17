@@ -5,6 +5,7 @@ app_name = 'notifications'
 
 urlpatterns = [
     path('inbox/', views.inbox_view, name='inbox'),
+    path('unread-count/', views.unread_count_view, name='unread_count'),
     path('conversation/<int:conversation_id>/', views.conversation_detail_view, name='conversation_detail'),
     path('start/<str:username>/', views.conversation_start_view, name='conversation_start'),
 

@@ -219,6 +219,27 @@ def organization_create_view(request):
 
 
 @login_required
+def organization_update_view(request, org_id):
+    """Edit organization name and description. Restricted to org admin (creator)."""
+    organization = get_object_or_404(Organization, id=org_id)
+
+    if organization.created_by != request.user and not request.user.is_superuser:
+        messages.error(request, 'Only the organization creator can edit it.')
+        return redirect('accounts:organization_detail', org_id=org_id)
+
+    if request.method == 'POST':
+        form = OrganizationForm(request.POST, instance=organization)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Organization updated successfully.')
+            return redirect('accounts:organization_detail', org_id=org_id)
+    else:
+        form = OrganizationForm(instance=organization)
+
+    return render(request, 'accounts/organization_edit.html', {'form': form, 'organization': organization})
+
+
+@login_required
 def organization_detail_view(request, org_id):
     """View organization details and manage mentors/mentees."""
     organization = get_object_or_404(Organization, id=org_id)

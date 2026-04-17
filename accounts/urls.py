@@ -17,6 +17,7 @@ urlpatterns = [
     path('organization/create/', views.organization_create_view, name='organization_create'),
     path('organization/join/', views.organization_join_view, name='organization_join'),
     path('organization/<int:org_id>/', views.organization_detail_view, name='organization_detail'),
+    path('organization/<int:org_id>/edit/', views.organization_update_view, name='organization_edit'),
     path('organization/assign/<int:mentee_id>/', views.mentor_assign_view, name='mentor_assign'),
 
     # Task management

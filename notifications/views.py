@@ -3,8 +3,20 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.db.models import Q, F
+from django.http import JsonResponse
 from .models import Conversation, Message
 from .services import NotificationService
+
+
+@login_required
+def unread_count_view(request):
+    count = Message.objects.filter(
+        conversation__in=Conversation.objects.filter(
+            Q(participant1=request.user) | Q(participant2=request.user)
+        ),
+        is_read=False
+    ).exclude(sender=request.user).count()
+    return JsonResponse({'count': count})
 
 
 @login_required
