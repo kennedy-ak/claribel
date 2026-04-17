@@ -4,7 +4,7 @@ set -e
 mkdir -p logs/pids
 
 echo "=== Activating virtual environment ==="
-source .venv/bin/activate
+source env/bin/activate
 
 echo "=== Running database migrations ==="
 python manage.py migrate --noinput
