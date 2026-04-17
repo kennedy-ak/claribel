@@ -13,6 +13,103 @@ from notifications.services import NotificationService
 ALLOW_MENTOR_REGISTRATION = getattr(settings, 'ALLOW_MENTOR_REGISTRATION', True)
 
 
+def _get_supabase():
+    from supabase import create_client
+    return create_client(settings.SUPABASE_URL, settings.SUPABASE_ANON_KEY)
+
+
+def google_login_view(request):
+    """Redirect user to Supabase Google OAuth."""
+    supabase = _get_supabase()
+    callback_url = request.build_absolute_uri('/accounts/google/callback/')
+    response = supabase.auth.sign_in_with_oauth({
+        'provider': 'google',
+        'options': {'redirect_to': callback_url},
+    })
+    return redirect(response.url)
+
+
+def google_callback_view(request):
+    """Handle Supabase OAuth callback — exchange code for session."""
+    code = request.GET.get('code')
+    if not code:
+        messages.error(request, 'Google login failed. Please try again.')
+        return redirect('accounts:login')
+
+    try:
+        supabase = _get_supabase()
+        session_response = supabase.auth.exchange_code_for_session({'auth_code': code})
+        supabase_user = session_response.user
+        email = supabase_user.email
+        full_name = (supabase_user.user_metadata or {}).get('full_name', '')
+        first_name, _, last_name = full_name.partition(' ')
+    except Exception:
+        messages.error(request, 'Google login failed. Please try again.')
+        return redirect('accounts:login')
+
+    # Find or create the Django user
+    user, created = User.objects.get_or_create(
+        email=email,
+        defaults={
+            'username': email.split('@')[0],
+            'first_name': first_name,
+            'last_name': last_name,
+        }
+    )
+
+    # Ensure username is unique if it clashed
+    if created and User.objects.filter(username=user.username).exclude(pk=user.pk).exists():
+        user.username = f"{user.username}_{user.pk}"
+        user.save()
+
+    login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+    request.session.set_expiry(60 * 60 * 24 * 30)  # Google logins always remember
+
+    if created or not user.profile.organization:
+        # New user or no org yet — needs to enter join code
+        return redirect('accounts:google_complete')
+
+    return redirect('accounts:mentor_dashboard' if user.profile.role == 'mentor' else 'accounts:mentee_dashboard')
+
+
+@login_required
+def google_complete_view(request):
+    """Post-Google-OAuth step: enter org join code."""
+    if request.user.profile.organization:
+        return redirect('accounts:mentee_dashboard')
+
+    if request.method == 'POST':
+        join_code = request.POST.get('join_code', '').strip().upper()
+        phone_number = request.POST.get('phone_number', '').strip()
+
+        try:
+            organization = Organization.objects.get(join_code=join_code, is_active=True)
+        except Organization.DoesNotExist:
+            messages.error(request, 'Invalid join code. Please check with your organization admin.')
+            return render(request, 'accounts/google_complete.html')
+
+        request.user.profile.organization = organization
+        request.user.profile.role = 'mentee'
+        if phone_number:
+            request.user.profile.phone_number = phone_number
+        request.user.profile.save()
+
+        # Auto-assign to mentor with fewest mentees
+        available_mentors = organization.get_mentors()
+        if available_mentors.exists():
+            assigned_mentor = min(available_mentors, key=lambda m: m.get_mentees().count())
+            MentorAssignment.objects.create(
+                mentee=request.user.profile,
+                mentor=assigned_mentor,
+                notes='Auto-assigned on Google registration'
+            )
+
+        messages.success(request, f'Welcome to {organization.name}!')
+        return redirect('accounts:mentee_dashboard')
+
+    return render(request, 'accounts/google_complete.html')
+
+
 def login_view(request):
     if request.user.is_authenticated:
         return redirect('accounts:mentor_dashboard' if request.user.profile.role == 'mentor' else 'accounts:mentee_dashboard')

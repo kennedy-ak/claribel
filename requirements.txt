@@ -21,6 +21,10 @@ django-cors-headers>=4.3.0
 # Optional: For development (uncomment if needed)
 # django-debug-toolbar>=4.2.0
 
+# Google OAuth via Supabase
+supabase>=2.0.0
+PyJWT>=2.8.0
+
 # Real-time messaging (WebSocket support)
 daphne>=4.0.0
 channels>=4.0.0
