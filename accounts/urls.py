@@ -6,8 +6,11 @@ app_name = 'accounts'
 
 urlpatterns = [
     path('register/', views.register_view, name='register'),
-    path('login/', auth_views.LoginView.as_view(template_name='accounts/login.html'), name='login'),
+    path('login/', views.login_view, name='login'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
+    path('google/', views.google_login_view, name='google_login'),
+    path('google/callback/', views.google_callback_view, name='google_callback'),
+    path('google/complete/', views.google_complete_view, name='google_complete'),
     path('profile/', views.profile_view, name='profile'),
     path('profile/update/', views.profile_update_view, name='profile_update'),
     path('mentor/dashboard/', views.mentor_dashboard_view, name='mentor_dashboard'),

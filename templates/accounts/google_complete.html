@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block title %}Complete Registration — MentorFlow{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-5">
+        <div class="card">
+            <div class="card-header text-center">
+                <div class="mb-2" style="font-size:2rem;">👋</div>
+                <h4 class="mb-0">One last step</h4>
+                <p class="text-muted small mb-0">Enter your organization join code to get started</p>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label for="join_code" class="form-label">Organization Join Code *</label>
+                        <input type="text"
+                               name="join_code"
+                               id="join_code"
+                               class="form-control text-uppercase"
+                               placeholder="e.g. ABC12345"
+                               maxlength="8"
+                               required
+                               style="letter-spacing: 3px; font-weight: 600;">
+                        <small class="form-text text-muted">Ask your organization admin for the 8-character code.</small>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="phone_number" class="form-label">Phone Number <span class="text-muted">(optional)</span></label>
+                        <input type="text"
+                               name="phone_number"
+                               id="phone_number"
+                               class="form-control"
+                               placeholder="e.g. 0201234567">
+                        <small class="form-text text-muted">For SMS reminders (Ghanaian numbers only).</small>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">Join Organization</button>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer text-center">
+                <small class="text-muted">
+                    Signed in as <strong>{{ request.user.email }}</strong> &nbsp;·&nbsp;
+                    <a href="{% url 'accounts:logout' %}">Not you? Sign out</a>
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

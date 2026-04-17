@@ -1,3 +1,6 @@
+# Google OAuth credentials
+client_secret*.json
+
 # Python
 __pycache__/
 *.py[cod]
