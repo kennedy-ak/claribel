@@ -467,6 +467,14 @@
                                 <span>Mentee Work</span>
                             </a>
                             <ul class="dropdown-menu">
+                                <li><h6 class="dropdown-header">Manage</h6></li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'accounts:mentee_list' %}">
+                                        <i class="bi bi-people"></i>
+                                        <span>My Mentees</span>
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
                                 <li><h6 class="dropdown-header">Review Submissions</h6></li>
                                 <li>
                                     <a class="dropdown-item" href="{% url 'todo:mentor_todos' %}">

@@ -8,9 +8,6 @@ urlpatterns = [
     path('register/', views.register_view, name='register'),
     path('login/', views.login_view, name='login'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
-    path('google/', views.google_login_view, name='google_login'),
-    path('google/callback/', views.google_callback_view, name='google_callback'),
-    path('google/complete/', views.google_complete_view, name='google_complete'),
     path('profile/', views.profile_view, name='profile'),
     path('profile/update/', views.profile_update_view, name='profile_update'),
     path('mentor/dashboard/', views.mentor_dashboard_view, name='mentor_dashboard'),
@@ -22,6 +19,12 @@ urlpatterns = [
     path('organization/<int:org_id>/', views.organization_detail_view, name='organization_detail'),
     path('organization/<int:org_id>/edit/', views.organization_update_view, name='organization_edit'),
     path('organization/assign/<int:mentee_id>/', views.mentor_assign_view, name='mentor_assign'),
+
+    # Mentee management (mentor CRUD)
+    path('mentees/', views.mentee_list_view, name='mentee_list'),
+    path('mentees/<int:mentee_id>/', views.mentee_detail_view, name='mentee_detail'),
+    path('mentees/<int:mentee_id>/edit/', views.mentee_edit_view, name='mentee_edit'),
+    path('mentees/<int:mentee_id>/remove/', views.mentee_remove_view, name='mentee_remove'),
 
     # Task management
     path('tasks/create/', views.task_create_view, name='task_create'),

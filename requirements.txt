@@ -21,7 +21,6 @@ django-cors-headers>=4.3.0
 # Optional: For development (uncomment if needed)
 # django-debug-toolbar>=4.2.0
 
-# Google OAuth (direct)
 
 # Real-time messaging (WebSocket support)
 daphne>=4.0.0
