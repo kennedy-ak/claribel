@@ -71,6 +71,30 @@ def report_today_view(request):
 
 
 @login_required
+def report_edit_view(request, report_id):
+    if request.user.profile.role != 'mentee':
+        return redirect('accounts:profile')
+
+    report = get_object_or_404(DailyReport, id=report_id, mentee=request.user)
+
+    if report.mentor_feedback:
+        messages.warning(request, 'This report has already been reviewed by your mentor and can no longer be edited.')
+        return redirect('reports:today')
+
+    if request.method == 'POST':
+        report.mood = int(request.POST.get('mood', report.mood))
+        report.achievements = request.POST.get('achievements', report.achievements)
+        report.challenges = request.POST.get('challenges', report.challenges)
+        report.learnings = request.POST.get('learnings', report.learnings)
+        report.next_steps = request.POST.get('next_steps', report.next_steps)
+        report.save()
+        messages.success(request, 'Report updated successfully.')
+        return redirect('reports:today')
+
+    return render(request, 'reports/report_form.html', {'report': report, 'editing': True})
+
+
+@login_required
 def mentor_reports_view(request):
     if request.user.profile.role != 'mentor':
         return redirect('accounts:profile')

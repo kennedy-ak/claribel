@@ -62,7 +62,7 @@
 
             <!-- Filter Buttons -->
             <div class="mb-3">
-                <div class="btn-group" role="group">
+                <div class="d-flex flex-wrap gap-2">
                     <a href="{% url 'accounts:task_list' %}" class="btn {% if not status_filter %}btn-primary{% else %}btn-outline-primary{% endif %}">All</a>
                     <a href="{% url 'accounts:task_list' %}?status=pending" class="btn {% if status_filter == 'pending' %}btn-primary{% else %}btn-outline-primary{% endif %}">Pending</a>
                     <a href="{% url 'accounts:task_list' %}?status=in_progress" class="btn {% if status_filter == 'in_progress' %}btn-primary{% else %}btn-outline-primary{% endif %}">In Progress</a>
