@@ -30,7 +30,13 @@
             <div class="card-body">
                 <h5 class="card-title">Evening Report</h5>
                 <p class="card-text">Share your progress</p>
-                <a href="{% url 'reports:create' %}" class="btn btn-success">Submit Report</a>
+                {% if report_today %}
+                    <a href="{% url 'reports:today' %}" class="btn btn-outline-success">
+                        <i class="bi bi-check2-circle me-1"></i>Submitted
+                    </a>
+                {% else %}
+                    <a href="{% url 'reports:create' %}" class="btn btn-success">Submit Report</a>
+                {% endif %}
             </div>
         </div>
     </div>

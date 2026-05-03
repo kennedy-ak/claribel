@@ -5,6 +5,8 @@ from django.contrib import messages
 from .models import TodoList, TodoItem
 from .forms import TodoListForm
 from notifications.services import NotificationService
+from reports.models import DailyReport
+from accounts.models import TaskAssignment
 
 
 @login_required
@@ -12,17 +14,6 @@ def todo_create_view(request):
     if request.user.profile.role != 'mentee':
         messages.error(request, 'Only mentees can create todo lists.')
         return redirect('accounts:profile')
-
-    # Check if todo list already exists for today
-    today = timezone.now().date()
-    existing_todo = TodoList.objects.filter(
-        mentee=request.user,
-        submission_date=today
-    ).first()
-
-    if existing_todo:
-        messages.info(request, 'You have already created a todo list for today.')
-        return redirect('todo:today')
 
     if request.method == 'POST':
         # Create the todo list
@@ -53,7 +44,7 @@ def todo_create_view(request):
                 recipient=current_mentor.user,
                 trigger_event='todo_submitted',
                 subject=f'Todo List Submitted by {request.user.username}',
-                message=f'{request.user.username} has created their daily todo list. '
+                message=f'{request.user.username} has created a todo list. '
                        f'Please review it on the mentor dashboard.',
                 notification_type='email'
             )
@@ -79,23 +70,43 @@ def todo_today_view(request):
         return redirect('accounts:profile')
 
     today = timezone.now().date()
-    todo_list = TodoList.objects.filter(
+    todo_lists = TodoList.objects.filter(
         mentee=request.user,
         submission_date=today
-    ).first()
+    )
 
-    # Calculate progress
+    # Calculate progress for all todos
     completed_count = 0
     total_count = 0
-    if todo_list:
-        total_count = todo_list.tasks.count()
-        completed_count = todo_list.tasks.filter(status='completed').count()
+    for todo_list in todo_lists:
+        total_count += todo_list.tasks.count()
+        completed_count += todo_list.tasks.filter(status='completed').count()
+
+    # Auto-mark overdue assigned tasks
+    TaskAssignment.objects.filter(
+        mentee=request.user,
+        due_date__lt=today
+    ).exclude(status__in=['completed', 'overdue']).update(status='overdue')
+
+    # Assigned tasks due today (mentor-assigned)
+    assigned_today = TaskAssignment.objects.filter(
+        mentee=request.user,
+        due_date=today
+    ).select_related('mentor').order_by('priority')
+
+    # Today's daily report (to control submit-button visibility)
+    report_today = DailyReport.objects.filter(
+        mentee=request.user,
+        report_date=today
+    ).first()
 
     context = {
-        'todo_list': todo_list,
+        'todo_lists': todo_lists,
         'today': today,
         'completed_count': completed_count,
-        'total_count': total_count
+        'total_count': total_count,
+        'assigned_today': assigned_today,
+        'report_today': report_today,
     }
     return render(request, 'todo/todo_today.html', context)
 
@@ -174,3 +185,53 @@ def toggle_todo_item_view(request, item_id):
 
     messages.success(request, f'Todo item marked as {todo_item.status}.')
     return redirect('todo:today')
+
+
+@login_required
+def mentor_toggle_review_view(request, item_id):
+    """Toggle the mentor reviewed status of a todo item."""
+    if request.user.profile.role != 'mentor':
+        messages.error(request, 'Only mentors can review todo items.')
+        return redirect('accounts:profile')
+
+    todo_item = get_object_or_404(TodoItem, id=item_id)
+
+    # Verify this todo item belongs to one of the mentor's mentees
+    mentee_ids = [m.user.id for m in request.user.profile.get_mentees()]
+    if todo_item.todo_list.mentee_id not in mentee_ids:
+        messages.error(request, 'You can only review todo items of your mentees.')
+        return redirect('todo:mentor_todos')
+
+    # Toggle the mentor reviewed status
+    todo_item.mentor_reviewed = not todo_item.mentor_reviewed
+    todo_item.save()
+
+    status = "reviewed" if todo_item.mentor_reviewed else "unreviewed"
+    messages.success(request, f'Todo item marked as {status}.')
+    return redirect('todo:mentor_todo_detail', todo_id=todo_item.todo_list.id)
+
+
+@login_required
+def mentor_item_comment_view(request, item_id):
+    """Add or update mentor comment on a todo item."""
+    if request.user.profile.role != 'mentor':
+        messages.error(request, 'Only mentors can comment on todo items.')
+        return redirect('accounts:profile')
+
+    todo_item = get_object_or_404(TodoItem, id=item_id)
+
+    # Verify this todo item belongs to one of the mentor's mentees
+    mentee_ids = [m.user.id for m in request.user.profile.get_mentees()]
+    if todo_item.todo_list.mentee_id not in mentee_ids:
+        messages.error(request, 'You can only comment on todo items of your mentees.')
+        return redirect('todo:mentor_todos')
+
+    if request.method == 'POST':
+        comment = request.POST.get('mentor_comment', '').strip()
+        todo_item.mentor_comment = comment
+        todo_item.save()
+
+        messages.success(request, 'Comment added successfully.')
+        return redirect('todo:mentor_todo_detail', todo_id=todo_item.todo_list.id)
+
+    return redirect('todo:mentor_todo_detail', todo_id=todo_item.todo_list.id)

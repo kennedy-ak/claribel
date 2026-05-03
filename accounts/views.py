@@ -193,6 +193,18 @@ def mentee_dashboard_view(request):
     current_mentor = request.user.profile.get_current_mentor()
     organization = request.user.profile.organization
 
+    today = timezone.now().date()
+
+    # Auto-mark overdue assigned tasks
+    TaskAssignment.objects.filter(
+        mentee=request.user,
+        due_date__lt=today
+    ).exclude(status__in=['completed', 'overdue']).update(status='overdue')
+
+    # Today's daily report (controls submit-button visibility)
+    from reports.models import DailyReport
+    report_today = DailyReport.objects.filter(mentee=request.user, report_date=today).first()
+
     # Get assigned tasks (incomplete tasks first)
     my_tasks = TaskAssignment.objects.filter(
         mentee=request.user
@@ -213,7 +225,8 @@ def mentee_dashboard_view(request):
         'mentor': current_mentor,
         'organization': organization,
         'my_tasks': my_tasks,
-        'my_meetings': my_meetings
+        'my_meetings': my_meetings,
+        'report_today': report_today,
     }
     return render(request, 'accounts/mentee_dashboard.html', context)
 
@@ -534,10 +547,20 @@ def task_list_view(request):
         messages.warning(request, 'You must join an organization first.')
         return redirect('accounts:profile')
 
+    today = timezone.now().date()
+
     if request.user.profile.role == 'mentor':
+        # Auto-mark overdue across this mentor's assignments
+        TaskAssignment.objects.filter(
+            mentor=request.user, due_date__lt=today
+        ).exclude(status__in=['completed', 'overdue']).update(status='overdue')
         # Mentors see all tasks they've assigned
         tasks = TaskAssignment.objects.filter(mentor=request.user)
     else:
+        # Auto-mark overdue for this mentee
+        TaskAssignment.objects.filter(
+            mentee=request.user, due_date__lt=today
+        ).exclude(status__in=['completed', 'overdue']).update(status='overdue')
         # Mentees see only tasks assigned to them
         tasks = TaskAssignment.objects.filter(mentee=request.user)
 
@@ -569,6 +592,11 @@ def task_list_view(request):
 def task_detail_view(request, task_id):
     """View task details and update status."""
     task = get_object_or_404(TaskAssignment, id=task_id)
+
+    # Auto-mark overdue on read
+    if task.status not in ('completed', 'overdue') and task.due_date < timezone.now().date():
+        task.status = 'overdue'
+        task.save(update_fields=['status'])
 
     # Check permissions
     if request.user.profile.role == 'mentor':

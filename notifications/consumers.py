@@ -60,9 +60,23 @@ class ChatConsumer(AsyncWebsocketConsumer):
         )
 
     async def chat_message(self, event):
+        message = dict(event['message'])
+        # If this consumer's user is the recipient (not the sender) and is currently
+        # connected to the chat, mark the message as read immediately so the unread
+        # count doesn't grow while the user is viewing the conversation.
+        if message.get('sender') != self.scope['user'].username:
+            await self.mark_single_message_read(message['id'])
+            message['is_read'] = True
+            await self.channel_layer.group_send(
+                self.conversation_group_name,
+                {
+                    'type': 'read_receipt',
+                    'reader': self.scope['user'].username,
+                }
+            )
         await self.send(text_data=json.dumps({
             'type': 'chat_message',
-            'message': event['message']
+            'message': message,
         }))
 
     async def read_receipt(self, event):
@@ -87,6 +101,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
             is_read=False
         ).exclude(sender=user).update(is_read=True)
         return updated > 0
+
+    @database_sync_to_async
+    def mark_single_message_read(self, message_id):
+        Message.objects.filter(id=message_id, is_read=False).update(is_read=True)
 
     @database_sync_to_async
     def save_message(self, conversation_id, sender, content):

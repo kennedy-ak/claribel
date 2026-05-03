@@ -2,9 +2,14 @@
 
 {% block title %}{{ other_user.get_full_name|default:other_user.username }} — Messages{% endblock %}
 
+{% block footer %}{% endblock %}
+
 {% block content %}
 <style>
 main .alert { display: none !important; }
+main.container { padding-bottom: 0 !important; }
+body { display: flex; flex-direction: column; min-height: 100vh; }
+main { flex: 1 0 auto; }
 
 .chat-wrapper {
     max-width: 820px;

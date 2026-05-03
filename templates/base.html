@@ -528,6 +528,47 @@
                         </li>
                         {% endif %}
 
+                        <!-- Projects Dropdown -->
+                        {% if user.profile.role == 'mentor' %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-folder"></i>
+                                <span>Projects</span>
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><h6 class="dropdown-header">Manage Projects</h6></li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'projects:mentor_project_create' %}">
+                                        <i class="bi bi-plus-circle"></i>
+                                        <span>Create Project</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'projects:mentor_project_list' %}">
+                                        <i class="bi bi-list-ul"></i>
+                                        <span>View All Projects</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                        {% else %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-folder"></i>
+                                <span>My Projects</span>
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><h6 class="dropdown-header">My Learning</h6></li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'projects:mentee_project_list' %}">
+                                        <i class="bi bi-list-ul"></i>
+                                        <span>View My Projects</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                        {% endif %}
+
                         <!-- Messages with notification badge -->
                         <li class="nav-item">
                             <a class="nav-link position-relative" href="{% url 'notifications:inbox' %}">
@@ -626,6 +667,7 @@
         {% block content %}{% endblock %}
     </main>
 
+    {% block footer %}
     <footer>
         <div class="container">
             <div class="row">
@@ -689,6 +731,7 @@
             </div>
         </div>
     </footer>
+    {% endblock %}
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     {% block extra_js %}{% endblock %}
